@@ -1,146 +1,352 @@
 ---
-description: Onboard an existing repository. Detects Git conventions, analyzes structure, and configures workflow settings.
-argument-hint: [repo-path]
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/detect-git-conventions.sh:*)
+description: Onboard an existing project into the workflow. Analyzes codebase and creates all workflow documents (PROJECT.md, PERSONAS.md, UX.md, STACK.md, backlog structure).
+argument-hint: [--full]
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task
 ---
 
-# /onboard - Repository Onboarding
+# /onboard - Onboard Existing Project
 
-Analyze an existing repository and configure the workflow to match its conventions.
+**Analyze an existing codebase** and create all workflow documents pre-filled with detected information.
 
 ## Usage
 
 ```
-/onboard                    # Onboard current directory
-/onboard ./apps/api         # Onboard specific repo
-/onboard --all              # Onboard all repos in project
+/onboard              # Standard onboarding
+/onboard --full       # Full onboarding with backlog generation
 ```
 
-## Workflow
+## IMPORTANT
 
-### 1. Detect Git Conventions
+You MUST actively:
+1. **Scan and read** the actual codebase
+2. **Analyze** architecture, patterns, and conventions
+3. **Create** all workflow documents with real data from the analysis
+4. **NOT** just describe what to do - actually do it
 
-Run detection script:
+---
+
+## Phase 1: Deep Project Analysis
+
+### 1.1 Scan Everything
+
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/detect-git-conventions.sh [repo-path]
+# Project structure
+tree -L 3 -I 'node_modules|.git|dist|build|__pycache__|venv' || ls -laR | head -100
+
+# Find all important files
+find . -type f \( -name "*.json" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" \) -not -path "*/node_modules/*" | head -30
 ```
 
-This detects:
-- **Flow type**: gitflow, github-flow, trunk-based, simple
-- **Main branch**: main, master, develop, trunk
-- **Branch patterns**: feature/*, feat/*, fix/*, etc.
-- **Commit format**: conventional, brackets, ticket-ref, freeform
-- **Ticket pattern**: #NUMBER, JIRA (PROJ-123), BRACKETS, none
-- **PR template**: github, gitlab, root, none
+### 1.2 Read and Analyze Key Files
 
-### 2. Analyze Project Structure
+**MUST READ these files if they exist:**
+- `package.json` / `Cargo.toml` / `pyproject.toml` / `go.mod`
+- `README.md`
+- `tsconfig.json` / `.eslintrc*` / `prettier*`
+- `.github/workflows/*`
+- `Dockerfile` / `docker-compose.yml`
+- Main entry files (`src/index.*`, `src/main.*`, `app.*`)
+- Config files (`*.config.js`, `*.config.ts`)
 
-Check for:
-- Monorepo vs single repo
-- Package manager (npm, yarn, pnpm, cargo, etc.)
-- Test framework
-- CI/CD setup (GitHub Actions, GitLab CI, etc.)
-- Existing documentation
+### 1.3 Understand the Application
 
-### 3. Review with User
+**Actively read source code to understand:**
+- What does this app do?
+- Who are the users?
+- What are the main features?
+- What's the architecture?
+- What external services does it use?
 
-Present detected conventions:
+---
 
+## Phase 2: Create Workflow Structure
+
+```bash
+mkdir -p docs/backlog/functional
+mkdir -p docs/backlog/technical
+mkdir -p docs/backlog/ux
+mkdir -p docs/sprints
+mkdir -p docs/architecture
+mkdir -p records/decisions
+mkdir -p .claude
 ```
-📦 Repository: api
 
-Detected Conventions:
-├── Flow: github-flow
-├── Main branch: main
-├── Branches: feature/*, fix/*, chore/*
-├── Commits: conventional (feat, fix, etc.)
-├── Tickets: #NUMBER format
-└── PR Template: .github/pull_request_template.md
+---
 
-Is this correct? (y/n/edit)
+## Phase 3: Create Workflow Documents
+
+### 3.1 Create `docs/PROJECT.md`
+
+**Pre-fill with detected information:**
+
+```markdown
+# [Project Name from package.json or folder]
+
+## Vision
+[Deduce from README or code analysis - what problem does this solve?]
+
+## Objectives
+- [Main objective 1 based on features found]
+- [Main objective 2]
+- [Main objective 3]
+
+## Current State
+[Describe what exists: features implemented, tech debt visible, etc.]
+
+## Constraints
+- Technical: [detected stack constraints]
+- Timeline: [ask user if not clear]
+- Resources: [ask user]
+
+## Success Metrics
+- [Suggest based on app type]
 ```
 
-### 4. Save Configuration
+### 3.2 Create `docs/PERSONAS.md`
 
-Create/update `.claude/repos.json`:
+**Deduce from code analysis:**
+
+```markdown
+# User Personas
+
+## Primary Persona: [Name]
+
+### Demographics
+- Role: [deduce from app type - admin? end user? developer?]
+- Tech level: [deduce from UI complexity]
+
+### Goals
+- [What can users achieve with this app?]
+
+### Frustrations
+- [What problems might they have? Deduce from code complexity]
+
+### Quote
+"[Representative quote based on app purpose]"
+
+---
+
+## Secondary Persona: [If applicable]
+...
+```
+
+### 3.3 Create `docs/UX.md`
+
+**Analyze existing UI if present:**
+
+```markdown
+# UX Direction
+
+## Current State
+[Describe existing UI/UX based on code - React components? CLI? API only?]
+
+## Visual Identity
+- Colors: [extract from CSS/tailwind config if exists]
+- Typography: [detect from config]
+- Style: [modern/minimal/corporate/etc based on dependencies]
+
+## UI Framework
+[Detected: Tailwind, MUI, Chakra, etc.]
+
+## Components
+[List main UI components found in code]
+
+## Improvements Needed
+- [Suggest based on analysis]
+```
+
+### 3.4 Create `docs/STACK.md`
+
+**Document detected tech stack:**
+
+```markdown
+# Tech Stack
+
+## Languages
+- [Detected from files: TypeScript, JavaScript, Python, etc.]
+- Version: [from config files]
+
+## Frontend
+- Framework: [React, Vue, Svelte, etc.]
+- UI Library: [Tailwind, MUI, etc.]
+- State: [Redux, Zustand, etc.]
+
+## Backend
+- Runtime: [Node, Deno, Python, Go, etc.]
+- Framework: [Express, Fastify, FastAPI, etc.]
+- API Style: [REST, GraphQL, tRPC]
+
+## Database
+- [PostgreSQL, MongoDB, SQLite, etc.]
+- ORM: [Prisma, TypeORM, SQLAlchemy, etc.]
+
+## Infrastructure
+- Hosting: [Vercel, Railway, AWS, etc. - detect from config]
+- CI/CD: [GitHub Actions, GitLab CI, etc.]
+- Containerization: [Docker if Dockerfile exists]
+
+## Development
+- Package Manager: [npm, yarn, pnpm, pip, cargo]
+- Linter: [ESLint, Prettier, Black, etc.]
+- Test Framework: [Jest, Vitest, pytest, etc.]
+
+## Commands
+```bash
+# Install
+[detected from package.json scripts]
+
+# Dev
+[detected]
+
+# Build
+[detected]
+
+# Test
+[detected]
+```
+```
+
+### 3.5 Create `.claude/repos.json`
+
+**Detect Git conventions:**
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/detect-git-conventions.sh .
+```
+
+Create config based on detection:
 
 ```json
 {
   "repos": {
-    "api": {
-      "path": "./apps/api",
-      "flow_type": "github-flow",
-      "main_branch": "main",
+    "[repo-name]": {
+      "path": ".",
+      "flow_type": "[detected]",
+      "main_branch": "[detected]",
       "branch_patterns": {
-        "feature": "feature/*",
-        "fix": "fix/*",
-        "tech": "chore/*"
+        "feature": "[detected]",
+        "fix": "[detected]",
+        "tech": "[detected]"
       },
-      "commit_format": "conventional",
-      "ticket_pattern": "#NUMBER",
-      "protected_branches": ["main"]
+      "commit_format": "[detected]",
+      "ticket_pattern": "[detected]",
+      "protected_branches": ["[detected]"]
     }
   },
-  "default_repo": "api",
+  "default_repo": "[repo-name]",
   "use_plugin_defaults": false
 }
 ```
 
-### 5. Generate Compatibility Layer
+### 3.6 Create/Update `CLAUDE.md`
 
-If conventions differ from plugin defaults, note the mappings:
+```markdown
+# [Project Name]
 
-```json
-{
-  "mappings": {
-    "tech/*": "chore/*",      // Plugin says tech/, repo uses chore/
-    "US-XXX": "#XXX"          // Plugin says US-XXX, repo uses #XXX
-  }
-}
+## Quick Reference
+
+### Commands
+```bash
+[detected dev commands]
 ```
 
-## Multi-Repo Projects
+### Structure
+[Brief structure description]
 
-For monorepos or multi-repo setups:
+## Workflow
+This project uses claude-flow workflow.
+- Backlog: `docs/backlog/`
+- Sprints: `docs/sprints/`
+- Decisions: `records/decisions/`
 
-```
-/onboard --all
-```
+## Conventions
+- Git: [detected conventions]
+- Commits: [detected format]
+- Branches: [detected patterns]
 
-Scans:
-- `apps/*/`
-- `packages/*/`
-- `services/*/`
-- Root if single repo
-
-Each repo gets its own config entry.
-
-## Fallback Behavior
-
-If no conventions detected:
-1. Ask user preference
-2. Or use plugin defaults
-3. Store choice in `.claude/repos.json`
-
-## Output
-
-```
-✅ Repository onboarded: api
-
-Conventions configured:
-- Branch: feature/#XX → feature/XX (adapted)
-- Commits: conventional commits ✓
-- Tickets: #NUMBER format ✓
-
-Next steps:
-1. Review .claude/repos.json
-2. Use /work #42 to start (will use detected conventions)
-3. Or /story to create backlog (optional)
+## Key Files
+- [Important file 1]: [purpose]
+- [Important file 2]: [purpose]
 ```
 
-## Re-onboarding
+---
 
-Running `/onboard` again on a configured repo:
-- Shows current config
-- Offers to re-detect
-- Allows manual edits
+## Phase 4: Generate Initial Backlog (if --full)
+
+Analyze code for:
+
+### 4.1 Technical Debt → TS-XXX stories
+
+Look for:
+- TODO/FIXME comments
+- Outdated dependencies
+- Missing tests
+- Code duplication
+- Security issues
+
+Create `docs/backlog/technical/TS-001-*.md` for each.
+
+### 4.2 Missing Features → US-XXX stories
+
+Based on incomplete code:
+- Stubbed functions
+- Empty handlers
+- Commented features
+
+Create `docs/backlog/functional/US-001-*.md` for each.
+
+### 4.3 UX Improvements → UX-XXX stories
+
+If frontend exists:
+- Accessibility issues
+- Missing responsive design
+- UI inconsistencies
+
+Create `docs/backlog/ux/UX-001-*.md` for each.
+
+---
+
+## Phase 5: Summary Report
+
+```
+✅ Project Onboarded: [name]
+
+📁 Structure Created:
+├── docs/
+│   ├── PROJECT.md (vision & objectives)
+│   ├── PERSONAS.md (user profiles)
+│   ├── UX.md (design direction)
+│   ├── STACK.md (tech documentation)
+│   └── backlog/ (story structure)
+├── records/decisions/
+├── .claude/repos.json (git conventions)
+└── CLAUDE.md (quick reference)
+
+📊 Analysis:
+├── Tech: [stack summary]
+├── Git Flow: [detected]
+├── Features: [count] identified
+└── Tech Debt: [count] items found
+
+💡 Suggestions:
+1. [Based on analysis]
+2. [Based on analysis]
+3. [Based on analysis]
+
+🚀 Next Steps:
+1. Review generated documents
+2. Use /story to add more stories
+3. Use /sprint plan to plan first sprint
+4. Use /work #XX to start coding
+```
+
+---
+
+## Key Difference from /init
+
+| /init | /onboard |
+|-------|----------|
+| New project from scratch | Existing codebase |
+| Asks questions | Analyzes code |
+| User provides info | Detects info |
+| Creates empty structure | Pre-fills documents |
