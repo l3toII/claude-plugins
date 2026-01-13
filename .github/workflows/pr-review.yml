@@ -1,0 +1,46 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            Review this pull request for:
+            1. Code quality and conventions
+            2. Security vulnerabilities (OWASP top 10)
+            3. Performance concerns
+            4. Test coverage adequacy
+            5. Documentation completeness
+
+            Provide feedback in this format:
+            ## Review Summary
+            ### What's Good
+            ### Suggestions (non-blocking)
+            ### Required Changes (blocking)
+            ### Security Notes
+            ### Performance Notes
+
+            Be constructive and educational.
+          allowed_tools: "Read,Glob,Grep,Bash(git diff:*),Bash(git log:*)"

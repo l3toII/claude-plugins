@@ -1,0 +1,38 @@
+name: Commit Convention Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Conventional Commits
+        uses: webiny/action-conventional-commits@v1.3.0
+        with:
+          allowed-commit-types: "feat,fix,docs,style,refactor,test,chore,perf,ci"
+
+      - name: Verify Ticket Reference
+        run: |
+          commits=$(git log origin/main..HEAD --pretty=format:"%s")
+          echo "Checking commits for ticket references..."
+
+          while IFS= read -r commit; do
+            # Skip merge commits
+            if [[ "$commit" =~ ^Merge ]]; then
+              continue
+            fi
+
+            # Check for ticket reference (#XX)
+            if [[ ! "$commit" =~ \(#[0-9]+\) ]] && [[ ! "$commit" =~ \#[0-9]+ ]]; then
+              echo "::warning::Commit missing ticket reference: $commit"
+            fi
+          done <<< "$commits"
+
+          echo "Commit check completed"

@@ -1,0 +1,22 @@
+{
+  "name": "workflow",
+  "version": "1.0.0",
+  "description": "Complete development workflow with stories, sprints, commits, PRs, releases, and environment management. Includes anti-vibe-code guards to ensure all code is tracked to stories.",
+  "author": {
+    "name": "Leto",
+    "url": "https://github.com/leto"
+  },
+  "homepage": "https://github.com/leto/claude-workflow",
+  "repository": "https://github.com/leto/claude-workflow",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "sprint",
+    "backlog",
+    "git-flow",
+    "release",
+    "development",
+    "productivity",
+    "agile"
+  ]
+}
