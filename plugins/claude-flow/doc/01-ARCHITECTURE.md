@@ -158,29 +158,39 @@ project/
 │   │   │   ├── setup.sh
 │   │   │   └── deploy.sh
 │   │   └── README.md
-│   ├── api/                     # Backend app
+│   ├── api/                     # Backend app (with its own config)
 │   │   ├── src/
 │   │   ├── package.json
+│   │   ├── tsconfig.json        # App-specific config
+│   │   ├── .eslintrc.cjs        # App-specific config
 │   │   ├── Dockerfile
 │   │   └── README.md
-│   └── web/                     # Frontend app
+│   └── web/                     # Frontend app (with its own config)
 │       ├── src/
 │       ├── package.json
+│       ├── tsconfig.json        # App-specific config
+│       ├── vite.config.ts       # App-specific config
+│       ├── tailwind.config.js   # App-specific config
 │       ├── Dockerfile
 │       └── README.md
-├── docs/
+├── project/                     # Project management
+│   ├── vision.md                # Vision, objectives, constraints
+│   ├── personas.md              # User personas
+│   ├── ux.md                    # Design direction
+│   ├── roadmap.md               # High-level roadmap
 │   ├── backlog/
 │   │   ├── functional/          # US-XXX stories
 │   │   ├── technical/           # TS-XXX stories
 │   │   └── ux/                  # UX-XXX stories
-│   ├── sprints/                 # SPRINT-XXX files
-│   ├── PROJECT.md
-│   ├── PERSONAS.md
-│   ├── UX.md
-│   ├── STACK.md
-│   └── ARCHITECTURE.md
-├── records/
+│   └── sprints/                 # SPRINT-XXX files
+├── engineering/                 # Technical documentation
+│   ├── stack.md                 # Technical choices
+│   ├── architecture.md          # System architecture
+│   ├── conventions.md           # Code conventions
 │   └── decisions/               # ADRs
+├── docs/                        # Public documentation
+│   ├── api/                     # Generated API docs
+│   └── archive/                 # Archived docs
 ├── .claude/
 │   ├── session.json             # Session state
 │   ├── environments.json        # Environment config
@@ -189,7 +199,7 @@ project/
 ├── CLAUDE.md                    # Entry point
 ├── README.md
 ├── Makefile                     # Orchestration
-└── package.json                 # Workspace only
+└── package.json                 # Workspace only (NO dependencies)
 ```
 
 ## Root Whitelist
@@ -199,8 +209,9 @@ project/
 | Item | Purpose |
 |------|---------|
 | `apps/` | All application code + devops |
-| `docs/` | Documentation |
-| `records/` | Decision records |
+| `project/` | Project management (backlog, sprints) |
+| `engineering/` | Technical docs (architecture, decisions) |
+| `docs/` | Public documentation |
 | `.claude/` | Plugin config |
 | `.git/` | Git repository |
 | `.gitignore` | Git ignore |
@@ -209,9 +220,25 @@ project/
 | `README.md` | Overview |
 | `LICENSE` | License |
 | `Makefile` | Orchestration |
-| `package.json` | Workspace only |
+| `package.json` | Workspace only (NO dependencies) |
 
 **Everything else must be in `apps/` or deleted.**
+
+## Forbidden at Root
+
+| Item | Where it goes |
+|------|---------------|
+| `tsconfig.json` | `apps/[name]/` |
+| `.eslintrc*` | `apps/[name]/` |
+| `.prettierrc*` | `apps/[name]/` |
+| `vite.config.*` | `apps/[name]/` |
+| `tailwind.config.*` | `apps/[name]/` |
+| `turbo.json` | DELETE (use Makefile) |
+| `Dockerfile` | `apps/devops/docker/` or `apps/[name]/` |
+| `docker-compose.*` | `apps/devops/docker/` |
+| `.env*` | `apps/devops/env/` |
+| `node_modules/` | DELETE |
+| `*.lock` | DELETE |
 
 ## apps/devops/ Role
 

@@ -37,17 +37,21 @@ Claude: [Creates structure]
 Output:
 ├── apps/
 │   └── devops/ (docker, env, scripts)
+├── project/
+│   ├── vision.md
+│   ├── personas.md
+│   ├── ux.md
+│   ├── backlog/functional/US-001.md ... US-012.md
+│   └── sprints/SPRINT-001.md
+├── engineering/
+│   ├── stack.md
+│   ├── architecture.md
+│   └── decisions/
 ├── docs/
-│   ├── PROJECT.md
-│   ├── PERSONAS.md
-│   ├── UX.md
-│   ├── STACK.md
-│   └── backlog/functional/US-001.md ... US-012.md
-├── docs/sprints/SPRINT-001.md
 ├── .gitignore
 ├── CLAUDE.md
 ├── Makefile
-└── package.json (workspace only)
+└── package.json (workspace only, NO deps)
 
 Branch: tech/init-project → main (PR)
 ```
@@ -77,12 +81,13 @@ Claude: [Creates branch: tech/onboard-workflow]
 
         "🔍 ROOT CLEANUP REPORT
 
-         ✅ WHITELIST (keep): .git/, README.md, LICENSE
+         ✅ WHITELIST (keep): .git/, README.md, LICENSE, .github/
 
          🚚 CODE → apps/core/: src/, lib/, index.ts
+         ⚙️ CONFIG-APP → apps/core/: tsconfig.json, .eslintrc, .prettierrc, vite.config.ts
          🐳 DEVOPS → apps/devops/: Dockerfile, docker-compose.yml, .env*
-         ⚙️ CONFIG → move with code: tsconfig.json, .eslintrc
-         🗑️ DELETE (regenerable): node_modules/, package-lock.json
+         🗑️ DELETE (monorepo): turbo.json, pnpm-workspace.yaml
+         🗑️ DELETE (regenerable): node_modules/, package-lock.json, dist/
          📦 ARCHIVE → docs/archive/: CHANGELOG.md
 
          1. AUTO-CLEAN (recommended)
@@ -103,16 +108,17 @@ Claude: [Creates apps/devops/ structure]
 Output (CLEAN pilot repo):
 ├── apps/
 │   ├── devops/ (docker/, env/, scripts/)
-│   ├── core/ (moved from root)
+│   ├── core/ (moved from root, with tsconfig, eslint, etc.)
 │   └── api/
-├── docs/ (PROJECT, PERSONAS, UX, STACK, backlog/)
-├── records/decisions/
+├── project/ (vision, personas, ux, backlog/, sprints/)
+├── engineering/ (stack, architecture, decisions/)
+├── docs/ (public docs, archive/)
 ├── .claude/
 ├── .gitignore
 ├── CLAUDE.md
 ├── README.md
 ├── Makefile
-└── package.json (workspace only)
+└── package.json (workspace only, NO deps)
 
 Branch: tech/onboard-workflow → main (PR)
 ```
@@ -121,7 +127,9 @@ Branch: tech/onboard-workflow → main (PR)
 - ✅ Whitelist approach: only allowed files stay at root
 - 🐳 DevOps files → apps/devops/ (Docker, .env, scripts)
 - 🚚 Code files → apps/[name]/
-- 🗑️ Regenerable files deleted (node_modules, locks)
+- ⚙️ Config files → apps/[name]/ (tsconfig, eslint, prettier, vite, etc.)
+- 🗑️ Regenerable files deleted (node_modules, locks, dist)
+- 🗑️ Monorepo tools deleted (turbo.json, nx.json - use Makefile)
 - 📁 Legacy docs archived to docs/archive/
 - ⚠️ User confirmation MANDATORY for all actions
 - 🎯 End result identical to fresh /init

@@ -19,15 +19,16 @@ Every code change must be linked to a tracked story:
 
 ### 2. Clean Pilot Repo (Whitelist)
 
-> Root level contains ONLY workflow files
+> Root level contains ONLY orchestration files
 
 **WHITELIST - Only these allowed at root:**
 
 ```
 ✅ ALLOWED:
 ├── apps/                    # All code (including devops)
-├── docs/                    # Documentation
-├── records/                 # Decision records
+├── project/                 # Project management (backlog, sprints)
+├── engineering/             # Technical docs (architecture, decisions)
+├── docs/                    # Public documentation
 ├── .claude/                 # Plugin config
 ├── .git/                    # Git
 ├── .gitignore
@@ -36,17 +37,22 @@ Every code change must be linked to a tracked story:
 ├── README.md
 ├── LICENSE
 ├── Makefile
-└── package.json (workspace only)
+└── package.json (workspace only, NO dependencies)
 
-❌ NOT ALLOWED:
-├── src/, lib/               # Code at root
-├── *.ts, *.js, *.py         # Code files
+❌ NOT ALLOWED AT ROOT:
+├── src/, lib/               # Code → apps/[name]/
+├── *.ts, *.js, *.py         # Code files → apps/[name]/
+├── tsconfig.json            # Config → apps/[name]/
+├── .eslintrc*               # Config → apps/[name]/
+├── .prettierrc*             # Config → apps/[name]/
+├── vite.config.*            # Config → apps/[name]/
+├── tailwind.config.*        # Config → apps/[name]/
+├── turbo.json               # DELETE (use Makefile)
 ├── Dockerfile               # → apps/devops/docker/
 ├── docker-compose.yml       # → apps/devops/docker/
 ├── .env*                    # → apps/devops/env/
-├── tsconfig.json            # → apps/[name]/
-├── node_modules/            # Delete
-└── *.lock                   # Delete
+├── node_modules/            # DELETE
+└── *.lock                   # DELETE
 ```
 
 ### 3. apps/devops/ - Centralized DevOps
@@ -98,29 +104,42 @@ poc/experiment           → No merge allowed
 vibe/exploration         → No merge allowed
 ```
 
-### 6. Documentation as Source of Truth
+### 6. Documentation Structure
 
 ```
-docs/
-├── PROJECT.md       # Vision, objectives, constraints
-├── PERSONAS.md      # User personas
-├── UX.md            # Design direction
-├── STACK.md         # Technical choices
-├── ARCHITECTURE.md  # System architecture
-└── backlog/         # All stories
+project/                    # Project management
+├── vision.md               # Project vision, objectives, constraints
+├── personas.md             # User personas
+├── ux.md                   # Design direction
+├── roadmap.md              # High-level roadmap
+├── backlog/                # All stories
+│   ├── functional/         # US-XXX
+│   ├── technical/          # TS-XXX
+│   └── ux/                 # UX-XXX
+└── sprints/                # Sprint plans
+
+engineering/                # Technical documentation
+├── stack.md                # Technical choices
+├── architecture.md         # System architecture
+├── conventions.md          # Code conventions
+└── decisions/              # ADRs
+
+docs/                       # Public documentation
+├── api/                    # Generated API docs
+└── archive/                # Archived docs
 ```
 
 ### 7. Milestone Before Code
 
 > Complete V1 planning BEFORE writing code
 
-1. Define PROJECT.md
-2. Create PERSONAS.md
-3. Establish UX.md direction
-4. Identify ALL V1 stories
-5. Plan sprints
-6. Choose STACK.md
-7. Setup apps/devops/
+1. Define `project/vision.md`
+2. Create `project/personas.md`
+3. Establish `project/ux.md` direction
+4. Identify ALL V1 stories in `project/backlog/`
+5. Plan sprints in `project/sprints/`
+6. Choose stack in `engineering/stack.md`
+7. Setup `apps/devops/`
 8. THEN start coding
 
 ## Workflow Philosophy

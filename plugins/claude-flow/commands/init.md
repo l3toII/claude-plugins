@@ -40,21 +40,30 @@ project/
 │       ├── scripts/
 │       │   └── setup.sh
 │       └── README.md
-├── docs/
+├── project/                     # Project management
+│   ├── vision.md
+│   ├── personas.md
+│   ├── ux.md
+│   ├── roadmap.md
 │   ├── backlog/
-│   │   ├── functional/
-│   │   ├── technical/
-│   │   └── ux/
-│   ├── sprints/
-│   └── architecture/
-├── records/
-│   └── decisions/
+│   │   ├── functional/          # US-XXX
+│   │   ├── technical/           # TS-XXX
+│   │   └── ux/                  # UX-XXX
+│   └── sprints/
+├── engineering/                 # Technical documentation
+│   ├── stack.md
+│   ├── architecture.md
+│   ├── conventions.md
+│   └── decisions/               # ADRs
+├── docs/                        # Public documentation
+│   ├── api/                     # Generated API docs
+│   └── archive/                 # Archived docs
 ├── .claude/
 ├── .gitignore
 ├── CLAUDE.md
 ├── README.md
 ├── Makefile
-└── package.json (workspace only)
+└── package.json (workspace only, NO dependencies)
 ```
 
 ### 1.1 Create Directories
@@ -65,15 +74,18 @@ mkdir -p apps/devops/docker
 mkdir -p apps/devops/env
 mkdir -p apps/devops/scripts
 
-# Docs structure
-mkdir -p docs/backlog/functional
-mkdir -p docs/backlog/technical
-mkdir -p docs/backlog/ux
-mkdir -p docs/sprints
-mkdir -p docs/architecture
+# Project management structure
+mkdir -p project/backlog/functional
+mkdir -p project/backlog/technical
+mkdir -p project/backlog/ux
+mkdir -p project/sprints
 
-# Records
-mkdir -p records/decisions
+# Engineering structure
+mkdir -p engineering/decisions
+
+# Public docs structure
+mkdir -p docs/api
+mkdir -p docs/archive
 
 # Config
 mkdir -p .claude
@@ -278,10 +290,15 @@ make test    # Run tests
 
 - `apps/` - Application code
   - `devops/` - Docker, env, scripts
-- `docs/` - Documentation
+  - `[name]/` - Each app with its own config (tsconfig, eslint, etc.)
+- `project/` - Project management
   - `backlog/` - User/Tech/UX stories
   - `sprints/` - Sprint plans
-- `records/decisions/` - ADRs
+  - `vision.md`, `personas.md`, `ux.md`
+- `engineering/` - Technical documentation
+  - `stack.md`, `architecture.md`
+  - `decisions/` - ADRs
+- `docs/` - Public documentation
 
 ## Workflow
 
@@ -296,9 +313,9 @@ Commands: `/story`, `/sprint`, `/work`, `/done`, `/release`
 
 Ask questions to create:
 
-1. **docs/PROJECT.md**: name, vision, objectives, constraints
-2. **docs/PERSONAS.md**: users, context, frustrations, goals
-3. **docs/UX.md**: visual mood, inspirations, brand guidelines
+1. **project/vision.md**: name, vision, objectives, constraints
+2. **project/personas.md**: users, context, frustrations, goals
+3. **project/ux.md**: visual mood, inspirations, brand guidelines
 
 ---
 
@@ -331,10 +348,20 @@ Update `apps/devops/docker/docker-compose.yml` with the new service.
 
 ## Phase 4: Tech Stack
 
-Create **docs/STACK.md** based on:
+Create **engineering/stack.md** based on:
 - Chosen technologies
 - Infrastructure needs
 - Development tools
+
+Create **engineering/architecture.md** with:
+- System overview
+- Component interactions
+- Data flow
+
+Create **engineering/conventions.md** with:
+- Code style guidelines
+- Naming conventions
+- File organization
 
 Update `.claude/environments.json` if deployment targets known.
 
@@ -354,14 +381,22 @@ Update `.claude/environments.json` if deployment targets known.
 Root (whitelist only):
 ├── ✅ apps/
 │   └── ✅ devops/ (docker, env, scripts)
-├── ✅ docs/ (PROJECT, PERSONAS, UX, STACK, backlog/)
-├── ✅ records/decisions/
+├── ✅ project/ (vision, personas, ux, backlog/, sprints/)
+├── ✅ engineering/ (stack, architecture, conventions, decisions/)
+├── ✅ docs/ (public docs, api/, archive/)
 ├── ✅ .claude/
 ├── ✅ .gitignore
 ├── ✅ CLAUDE.md
 ├── ✅ README.md
 ├── ✅ Makefile
-└── ✅ package.json (workspace only)
+└── ✅ package.json (workspace only, NO deps)
+
+❌ MUST NOT exist at root:
+├── ❌ tsconfig.json (goes in apps/[name]/)
+├── ❌ .eslintrc* (goes in apps/[name]/)
+├── ❌ .prettierrc* (goes in apps/[name]/)
+├── ❌ vite.config.* (goes in apps/[name]/)
+└── ❌ Any other config file
 ```
 
 ---
@@ -412,8 +447,9 @@ Only these files allowed at root:
 | File/Folder | Purpose |
 |-------------|---------|
 | `apps/` | All application code + devops |
-| `docs/` | Workflow documentation |
-| `records/` | Decision records |
+| `project/` | Project management (backlog, sprints, vision) |
+| `engineering/` | Technical docs (stack, architecture, decisions) |
+| `docs/` | Public documentation |
 | `.claude/` | Plugin configuration |
 | `.git/` | Git repository |
 | `.gitignore` | Git ignore rules |
@@ -422,7 +458,19 @@ Only these files allowed at root:
 | `README.md` | Project overview |
 | `LICENSE` | License (optional) |
 | `Makefile` | Orchestration |
-| `package.json` | Workspace only |
+| `package.json` | Workspace only (NO dependencies) |
+
+### Explicitly FORBIDDEN at root:
+
+| File | Reason |
+|------|--------|
+| `tsconfig.json` | Goes in `apps/[name]/` |
+| `.eslintrc*` | Goes in `apps/[name]/` |
+| `.prettierrc*` | Goes in `apps/[name]/` |
+| `vite.config.*` | Goes in `apps/[name]/` |
+| `tailwind.config.*` | Goes in `apps/[name]/` |
+| `turbo.json` | Use Makefile instead |
+| `node_modules/` | Should not be committed |
 
 ---
 
