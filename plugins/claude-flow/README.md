@@ -4,17 +4,17 @@ A complete development workflow plugin for Claude Code. Manage stories, sprints,
 
 ## Features
 
-- **Story Management**: Create and track User Stories, Technical Stories, and UX Stories
-- **Sprint Planning**: Plan, start, lock, and close sprints
-- **Adaptive Git**: Detects repo conventions (GitFlow, GitHub Flow, Jira) and adapts
+- **Unified Stories (S-XXX)**: Single format for functional, technical, and UX stories
+- **Story → Tickets → PRs**: One story creates tickets per app, each becomes a PR
+- **Independent Git Per App**: Each app is autonomous with its own repository
+- **Quality Gates**: Coverage, lint, tests, security checks per app
+- **dev-agent**: Autonomous agent to implement stories
 - **Anti-Vibe-Code Guards**: Prevent untracked code from being written
 - **Secret Detection**: Warns about potential secrets before writing files
 - **Automated Commits**: Conventional commits with ticket references
 - **PR Generation**: Rich PR descriptions with test plans
 - **Release Management**: Changelog generation and GitHub releases
 - **Environment Management**: Deploy to staging/production with safeguards
-- **Technical Debt Tracking**: Budget-based debt management
-- **Session Persistence**: Resume where you left off
 
 ## Installation
 
@@ -30,56 +30,93 @@ git clone https://github.com/l3toII/claude-flow.git ~/.claude/plugins/claude-flo
 
 ```bash
 /init                    # Initialize project
-/story "User login"      # Create story
-/work #42                # Start working
-/done                    # Complete (commit + PR)
+/story "User login"      # Create story → creates tickets per app
+/work S-042 --app api    # Start working on API implementation
+# dev-agent implements the ticket
+/done                    # Complete (commit + PR in app repo)
 /status                  # Check status
+```
+
+## Architecture
+
+```
+PRINCIPAL REPO (orchestration)
+├── project/
+│   ├── backlog/S-XXX.md     # Stories (unified format)
+│   └── sprints/
+├── apps/
+│   ├── api/ (.git)          # Independent repo
+│   │   └── .claude/quality.json
+│   ├── web/ (.git)          # Independent repo
+│   │   └── .claude/quality.json
+│   └── devops/              # Part of principal repo
+└── engineering/
+```
+
+## Story → Ticket → PR Flow
+
+```
+Story S-042 (principal repo, issue #42)
+│
+├── Ticket api#15 ──▶ /work S-042 --app api ──▶ PR in api repo
+│
+└── Ticket web#23 ──▶ /work S-042 --app web ──▶ PR in web repo
+│
+When all tickets done → Story S-042 = Done
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/init` | Initialize project with full workflow |
-| `/onboard` | Onboard existing project (cleanup + structure) |
-| `/story` | Create a new story (US/TS/UX) |
+| `/init` | Initialize new project (creates .git per app) |
+| `/onboard` | Onboard existing project (cleans root, creates .git per app) |
+| `/story` | Create story → GitHub issues in principal + app repos |
 | `/sprint` | Manage sprints (plan/start/lock/close) |
-| `/work #XX` | Start working on a ticket |
-| `/done` | Complete work (commit + PR + update) |
+| `/work S-XXX --app name` | Start working on ticket in specific app |
+| `/done` | Complete work (quality checks + PR in app repo) |
 | `/commit` | Create conventional commit |
 | `/pr` | Create or review pull requests |
 | `/release` | Create release with changelog |
 | `/env` | Manage environments |
 | `/status` | Show project status |
-| `/dashboard` | Visual project overview |
-| `/apps` | Manage apps in monorepo |
 | `/sync` | Verify code ↔ docs sync |
-| `/debt` | Manage technical debt |
-| `/decision` | Track architectural decisions |
-| `/ux` | Manage UX artifacts |
 | `/bye` | End session gracefully |
+
+## Agents
+
+| Agent | Trigger | Purpose |
+|-------|---------|---------|
+| `init-agent` | `/init` | Full project setup with questionnaire |
+| `onboard-agent` | `/onboard` | Transform existing codebase |
+| `dev-agent` | `/work` (optional) | Implement story ticket |
+| `review-agent` | `/pr review` | Code review |
+| `sync-agent` | `/sync` | Verify code ↔ docs |
+| `release-agent` | `/release` | Manage releases |
+
+## Quality Gates
+
+Each app has `.claude/quality.json`:
+
+```json
+{
+  "coverage": { "minimum": 80, "enforce": true },
+  "lint": { "warnings_allowed": 0 },
+  "tests": { "required": true },
+  "security": { "block_secrets": false }
+}
+```
+
+`/done` enforces these before creating PR.
 
 ## Anti-Vibe-Code Guards
 
 Automatic guards prevent workflow violations:
 
-- **Story Guard**: Blocks code in `apps/` without ticket branch
+- **Story Guard**: Blocks commits without ticket branch
 - **Merge Guard**: Prevents merging `poc/*` and `vibe/*` branches
-- **Sprint Lock**: Only fixes allowed during sprint lock
-- **Root Whitelist**: Blocks commits if forbidden files at root
+- **Root Whitelist**: Blocks forbidden files at root
 - **Secret Warning**: Warns about potential secrets in code
-
-## Branch Strategy (Adaptive)
-
-Plugin adapts to your repo conventions. Default pattern:
-
-| Type | Pattern | Mergeable | Ticket |
-|------|---------|-----------|--------|
-| Feature | `feature/#XX-desc` | ✅ | ✅ |
-| Fix | `fix/#XX-desc` | ✅ | ✅ |
-| Technical | `tech/#XX-desc` | ✅ | ✅ |
-| POC | `poc/desc` | ❌ | ❌ |
-| Vibe | `vibe/desc` | ❌ | ❌ |
 
 ## Project Structure
 
@@ -88,45 +125,31 @@ After `/init` or `/onboard`:
 ```
 project/
 ├── apps/
-│   ├── devops/              # Docker, env, scripts
-│   │   ├── docker/
-│   │   ├── env/
-│   │   └── scripts/
-│   ├── config/              # Shared configs (optional)
-│   │   ├── typescript/
-│   │   ├── eslint/
-│   │   └── prettier.json
-│   └── [app-name]/          # Application code
-│       ├── src/
-│       ├── package.json
-│       ├── tsconfig.json    # Can extend ../config/typescript/
-│       └── .eslintrc.cjs    # Can extend ../config/eslint/
-├── project/                 # Project management
+│   ├── [app-name]/          # Each app has .git
+│   │   ├── .git/
+│   │   ├── .claude/quality.json
+│   │   ├── src/
+│   │   ├── package.json     # Self-contained
+│   │   ├── tsconfig.json    # No extends
+│   │   └── README.md
+│   └── devops/              # No .git (principal repo)
+│       ├── docker/
+│       ├── env/
+│       └── scripts/
+├── project/
 │   ├── vision.md
 │   ├── personas.md
-│   ├── ux.md
-│   ├── roadmap.md
-│   ├── backlog/
-│   │   ├── functional/      # US-XXX
-│   │   ├── technical/       # TS-XXX
-│   │   └── ux/              # UX-XXX
+│   ├── backlog/S-XXX.md     # Unified stories
 │   └── sprints/
-├── engineering/             # Technical documentation
+├── engineering/
 │   ├── stack.md
 │   ├── architecture.md
-│   ├── conventions.md
-│   └── decisions/           # ADRs
-├── docs/                    # Public documentation
-│   ├── api/
-│   └── archive/
+│   └── decisions/
 ├── .claude/
-│   ├── session.json
-│   ├── environments.json
-│   └── repos.json
 ├── CLAUDE.md
 ├── README.md
 ├── Makefile
-└── package.json             # Workspace only (NO deps)
+└── package.json             # Workspace only
 ```
 
 ## Root Whitelist
@@ -148,13 +171,14 @@ Only these files allowed at root:
 - Claude Code CLI
 - Git
 - GitHub CLI (`gh`)
+- Node.js (for npm projects)
 
 ## Documentation
 
-See `doc/` folder for detailed documentation:
-- `00-FOUNDATIONS.md` - Core principles and philosophy
-- `01-ARCHITECTURE.md` - Plugin architecture and structure
-- `02-INTERACTIONS.md` - Complete command flows
+See `doc/` folder:
+- `00-FOUNDATIONS.md` - Core principles
+- `01-ARCHITECTURE.md` - Plugin structure
+- `02-INTERACTIONS.md` - Command flows
 
 ## License
 

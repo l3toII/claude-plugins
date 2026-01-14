@@ -1,133 +1,117 @@
 ---
 name: apps-structure
-description: Structure and conventions for apps/ directory and multi-git configuration. Use when managing apps, configuring git per app, or understanding monorepo structure.
+description: Structure and conventions for apps/ directory. Each app has its own git and is fully autonomous. Use when managing apps or understanding project structure.
 ---
 
 # Apps Structure
 
-Conventions for the `apps/` directory and multi-git configurations.
+Conventions for the `apps/` directory. **Each app is autonomous and has its own git repository.**
+
+## Core Principles
+
+1. **Each app has its own .git** (except devops)
+2. **Each app is 100% autonomous** - can be cloned and run independently
+3. **No shared config** - all config files are self-contained within each app
+4. **No extends** - tsconfig, eslint, etc. don't reference parent configs
 
 ## Directory Structure
 
 ```
 apps/
-├── devops/                  # Infrastructure (always present)
+├── devops/                  # Infrastructure (NO .git - stays in principal repo)
 │   ├── docker/
+│   │   ├── docker-compose.yml
+│   │   └── docker-compose.dev.yml
 │   ├── env/
+│   │   ├── .env.example
+│   │   └── .env.dev
 │   ├── scripts/
+│   │   ├── setup.sh
+│   │   └── dev.sh
 │   └── README.md
 │
-├── api/                     # Backend app (example)
-│   ├── .git/                # If independent repo
+├── api/                     # Backend app
+│   ├── .git/                # ✅ REQUIRED - independent repo
+│   ├── .claude/
+│   │   └── quality.json     # App-specific quality gates
 │   ├── src/
-│   ├── package.json
-│   ├── tsconfig.json        # App-specific config
-│   ├── .eslintrc.cjs        # App-specific config
+│   ├── tests/
+│   ├── package.json         # Self-contained, all deps included
+│   ├── tsconfig.json        # Complete config, NO extends
+│   ├── .eslintrc.cjs        # Complete config, NO extends
+│   ├── jest.config.js
 │   ├── Dockerfile
+│   ├── .gitignore
 │   └── README.md
 │
-├── web/                     # Frontend app (example)
+├── web/                     # Frontend app
+│   ├── .git/                # ✅ REQUIRED - independent repo
+│   ├── .claude/
+│   │   └── quality.json
 │   ├── src/
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts       # App-specific config
-│   ├── tailwind.config.js   # App-specific config
+│   ├── package.json         # Self-contained
+│   ├── tsconfig.json        # Complete config
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
 │   ├── Dockerfile
+│   ├── .gitignore
 │   └── README.md
 │
-└── worker/                  # Service app (example)
-    ├── src/
-    ├── package.json
-    └── README.md
+└── [other-app]/
+    ├── .git/                # ✅ REQUIRED
+    └── ...
 ```
 
 ## Required Files Per App
 
 | File | Required | Purpose |
 |------|----------|---------|
-| `package.json` | ✅ Yes | Dependencies, scripts |
+| `.git/` | ✅ Yes | Independent version control |
+| `package.json` | ✅ Yes | Dependencies, scripts (self-contained) |
 | `README.md` | ✅ Yes | Documentation |
-| `tsconfig.json` | If TypeScript | TypeScript config |
+| `.claude/quality.json` | ✅ Yes | Quality gates |
+| `.gitignore` | ✅ Yes | Git ignore rules |
+| `tsconfig.json` | If TypeScript | TypeScript config (complete, no extends) |
 | `Dockerfile` | Recommended | Container build |
-| `.eslintrc.*` | Recommended | Linting rules |
 
-## Git Types
-
-### 1. Monorepo (Default) - Recommended
-
-App is part of root git repository. **Follows root git-flow and versioning.**
+## Git Architecture
 
 ```
-project/
-├── .git/                    # Single git for all
+PRINCIPAL REPO (orchestration)
+├── .git/                    # Main project git
+├── project/                 # Stories, sprints, vision
+├── engineering/             # Architecture, stack, ADRs
 ├── apps/
-│   ├── api/                 # No .git here → follows root
-│   └── web/                 # No .git here → follows root
-```
-
-**Behavior:**
-- Branch strategy: **inherits from root** (defined in `.claude/repos.json`)
-- Version: **unified** (defined in `project/roadmap.md` or root `package.json`)
-- Commits: to root repo
-- Releases: coordinated across all apps
-
-**This is the DEFAULT and RECOMMENDED approach.**
-
-### 2. Independent Repository (Legacy/Exception)
-
-App has its own `.git` directory. **Preserves existing business rules.**
-
-```
-project/
-├── .git/                    # Root repo
-├── apps/
+│   ├── devops/             # Part of principal repo (no .git)
+│   │
 │   ├── api/
-│   │   └── .git/            # Own git repo - KEEPS ITS RULES
+│   │   └── .git/ ──────────▶ github.com/org/project-api
+│   │
 │   └── web/
-│       └── .git/            # Own git repo - KEEPS ITS RULES
+│       └── .git/ ──────────▶ github.com/org/project-web
+│
+└── docs/
 ```
 
-**Behavior:**
-- Branch strategy: **preserved from existing repo**
-- Version: **independent** (app's own versioning)
-- Commits: to app's own repo
-- Releases: independent schedule
+### Why Independent Git Per App?
 
-**Use ONLY when:**
-- App existed before onboarding with its own git
-- Different team/org manages the app
-- Regulatory/compliance requires separation
-- App is shared across multiple projects
+1. **Autonomy**: Clone `apps/api` alone and it works
+2. **Independent PRs**: Each app has its own PR lifecycle
+3. **Team separation**: Different teams can own different apps
+4. **Clear ownership**: Issues and PRs are per-app
+5. **Story → Tickets**: One story creates tickets per app (see story-format)
 
-> ⚠️ **IMPORTANT**: If an app has `.git/`, we PRESERVE its existing conventions.
-> We do NOT override branch strategy or versioning rules.
+### Exception: devops/
 
-### 3. Git Submodule (External)
-
-App is a git submodule tracked by parent.
-
-```
-project/
-├── .git/
-├── .gitmodules              # Tracks submodules
-├── apps/
-│   ├── api/                 # Submodule
-│   └── web/                 # Submodule
-```
-
-**Behavior:**
-- Pinned to specific commit
-- Updated explicitly
-- Preserves external repo rules
-
-**Use when:**
-- External dependency
-- Third-party code
-- Shared library across projects
+`apps/devops/` does **NOT** have its own git because:
+- It orchestrates other apps (docker-compose references them)
+- Contains env files that may reference multiple apps
+- Releases are coordinated at project level
 
 ## .claude/apps.json
 
-Configuration file for app management:
+Configuration file tracking all apps:
 
 ```json
 {
@@ -135,121 +119,160 @@ Configuration file for app management:
     "api": {
       "path": "apps/api",
       "type": "backend",
-      "stack": ["node", "typescript", "express"],
-      "git": {
-        "type": "monorepo"
-      },
-      "docker": {
-        "service": "api",
-        "port": 3000
-      }
+      "stack": ["node", "typescript", "fastify"],
+      "remote": "git@github.com:org/project-api.git",
+      "main_branch": "main"
     },
-    "legacy-service": {
-      "path": "apps/legacy-service",
-      "type": "backend",
-      "git": {
-        "type": "independent",
-        "preserve_rules": true,
-        "detected_strategy": "gitflow",
-        "detected_main": "master",
-        "remote": "git@github.com:org/legacy-service.git"
-      }
+    "web": {
+      "path": "apps/web",
+      "type": "frontend",
+      "stack": ["typescript", "react", "vite"],
+      "remote": "git@github.com:org/project-web.git",
+      "main_branch": "main"
+    },
+    "devops": {
+      "path": "apps/devops",
+      "type": "devops",
+      "git": "principal"
     }
   }
 }
 ```
 
-### Git Configuration Fields
+## Config Files - No Shared Config
 
-| Field | Values | Description |
-|-------|--------|-------------|
-| `type` | `monorepo`, `independent`, `submodule` | Git relationship |
-| `preserve_rules` | boolean | If true, keep existing repo conventions |
-| `detected_strategy` | string | Auto-detected branch strategy |
-| `detected_main` | string | Auto-detected main branch |
-| `remote` | URL | Git remote URL (if independent) |
+**RULE: Each app has complete, self-contained config files.**
 
-### Inheritance Rules
-
-| App has `.git`? | Behavior |
-|-----------------|----------|
-| **No** | Inherits ALL from root: branch strategy, versioning, conventions |
-| **Yes** | Preserves its own rules, detected and stored in apps.json |
-
-### Branch Strategies
-
-#### Trunk-Based
+### ❌ WRONG - Shared Config
 ```
-main ─────●─────●─────●─────●─────
-          │     │     │     │
-       feature branches (short-lived)
+project/
+├── tsconfig.base.json       # ❌ Shared at root
+├── .eslintrc.base.js        # ❌ Shared at root
+└── apps/
+    └── api/
+        └── tsconfig.json    # extends: "../../tsconfig.base.json" ❌
 ```
 
-#### GitFlow
+### ✅ CORRECT - Self-Contained
 ```
-main    ─────────────●─────────────●───
-                    ╱             ╱
-develop ────●────●─╱───●────●───╱────
-           ╱    ╱      ╱    ╱
-        feature branches
+project/
+└── apps/
+    ├── api/
+    │   ├── tsconfig.json    # Complete config, no extends
+    │   └── .eslintrc.cjs    # Complete config, no extends
+    └── web/
+        ├── tsconfig.json    # Complete config, no extends
+        └── .eslintrc.cjs    # Complete config, no extends
 ```
 
-#### GitHub Flow
+### Example: Self-Contained tsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
 ```
-main ─────●─────●─────●─────●─────
-         ╱│    ╱│    ╱│    ╱│
-      PR  │ PR  │ PR  │ PR  │
-         feature branches
+
+No `extends`, no references to parent directories.
+
+## Quality Gates Per App
+
+Each app has `.claude/quality.json`:
+
+```json
+{
+  "coverage": {
+    "minimum": 80,
+    "enforce": true
+  },
+  "lint": {
+    "warnings_allowed": 0
+  },
+  "tests": {
+    "required": true
+  },
+  "security": {
+    "block_secrets": false
+  }
+}
 ```
+
+This is read by `/done` to enforce quality before PR creation.
 
 ## App Types
 
-| Type | Description | Typical Stack |
-|------|-------------|---------------|
-| `devops` | Infrastructure | Docker, scripts |
-| `backend` | API/Server | Node, Python, Go |
-| `frontend` | UI | React, Vue, Svelte |
-| `service` | Background worker | Node, Python |
-| `library` | Shared code | TypeScript |
-| `cli` | Command-line tool | Node, Go |
+| Type | Description | Has .git | Typical Stack |
+|------|-------------|----------|---------------|
+| `devops` | Infrastructure | ❌ No | Docker, scripts |
+| `backend` | API/Server | ✅ Yes | Node, Python, Go |
+| `frontend` | UI | ✅ Yes | React, Vue, Svelte |
+| `service` | Background worker | ✅ Yes | Node, Python |
+| `library` | Shared code | ✅ Yes | TypeScript |
+| `cli` | Command-line tool | ✅ Yes | Node, Go |
 
-## Config Files Location
+## Workflow Integration
 
-**RULE: All config files belong IN the app, not at root.**
+### Story → Tickets → PRs
 
-| Config | Location | NOT at root |
-|--------|----------|-------------|
-| `tsconfig.json` | `apps/[name]/` | ❌ |
-| `.eslintrc.*` | `apps/[name]/` | ❌ |
-| `.prettierrc.*` | `apps/[name]/` | ❌ |
-| `vite.config.*` | `apps/[name]/` | ❌ |
-| `tailwind.config.*` | `apps/[name]/` | ❌ |
-| `jest.config.*` | `apps/[name]/` | ❌ |
-| `Dockerfile` | `apps/[name]/` or `apps/devops/docker/` | ❌ |
+```
+Story S-042 (principal repo)
+├── Ticket api#15 → PR in apps/api repo
+└── Ticket web#23 → PR in apps/web repo
+```
+
+### Commands Context
+
+| Command | Context | Git Operations |
+|---------|---------|----------------|
+| `/story` | Principal repo | Creates issues in principal + app repos |
+| `/work S-042 --app api` | `apps/api/` | Creates branch in api repo |
+| `/done` | Current app | PR in current app repo |
+| `/release` | Principal repo | Tags principal, coordinates apps |
 
 ## Detection Script
 
 ```bash
 #!/bin/bash
-# Detect git configuration for each app
+# Verify apps structure
 
 for app_dir in apps/*/; do
     app=$(basename "$app_dir")
     echo "=== $app ==="
 
-    # Check if has own git
+    if [ "$app" = "devops" ]; then
+        if [ -d "$app_dir/.git" ]; then
+            echo "❌ devops should NOT have .git"
+        else
+            echo "✅ devops: part of principal repo"
+        fi
+        continue
+    fi
+
+    # All other apps must have .git
     if [ -d "$app_dir/.git" ]; then
-        echo "Type: independent"
-        echo "Remote: $(git -C "$app_dir" remote get-url origin 2>/dev/null || echo 'none')"
-        echo "Branch: $(git -C "$app_dir" branch --show-current)"
-    elif git submodule status 2>/dev/null | grep -q "$app_dir"; then
-        echo "Type: submodule"
+        echo "✅ Has .git"
+        echo "   Remote: $(git -C "$app_dir" remote get-url origin 2>/dev/null || echo 'NONE - needs setup')"
     else
-        echo "Type: monorepo"
+        echo "❌ Missing .git - run /onboard to fix"
     fi
 
     # Check required files
-    for file in package.json README.md Dockerfile tsconfig.json; do
+    for file in package.json README.md .claude/quality.json; do
         if [ -f "$app_dir/$file" ]; then
             echo "✅ $file"
         else
@@ -257,30 +280,33 @@ for app_dir in apps/*/; do
         fi
     done
 
+    # Check for forbidden extends
+    if [ -f "$app_dir/tsconfig.json" ]; then
+        if grep -q '"extends"' "$app_dir/tsconfig.json"; then
+            echo "⚠️  tsconfig.json has extends - should be self-contained"
+        fi
+    fi
+
     echo ""
 done
 ```
 
 ## Best Practices
 
-1. **One app = One responsibility**
-   - Don't mix frontend and backend in one app
-   - Separate services for different domains
+1. **Each app is a complete project**
+   - Can be cloned and run independently
+   - Has all dependencies in its package.json
+   - Has all config files self-contained
 
-2. **Config stays with code**
-   - tsconfig.json in the app, not root
-   - Each app is self-contained
+2. **Git per app (except devops)**
+   - Enables independent PR workflows
+   - Clear ownership and issue tracking
+   - Matches story → ticket model
 
-3. **Consistent structure**
-   - All apps have src/, package.json, README.md
-   - DevOps has docker/, env/, scripts/
+3. **Quality gates per app**
+   - Different apps can have different thresholds
+   - Enforced by `/done` before PR
 
-4. **Git strategy matches team**
-   - Single team → monorepo
-   - Multiple teams → independent repos
-   - External deps → submodules
-
-5. **Document in apps.json**
-   - Track git config per app
-   - Store stack information
-   - Configure ports and services
+4. **Consistent naming**
+   - Repo name: `{project}-{app}` (e.g., `myproject-api`)
+   - Branch pattern: `feature/#{ticket}-{slug}`

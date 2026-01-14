@@ -1,54 +1,61 @@
 # 01 - Architecture
 
-Technical architecture of the Claude Workflow plugin.
+Technical architecture of the Claude Flow plugin.
 
 ## Plugin Structure
 
 ```
 claude-flow/
-├── .claude-plugin/
-│   └── plugin.json          # Plugin manifest
+├── plugin.json               # Plugin manifest
+├── .mcp.json                 # MCP servers (memory)
 ├── commands/                 # Slash commands
 │   ├── init.md              # Project initialization
 │   ├── onboard.md           # Existing project onboarding
-│   ├── story.md
+│   ├── story.md             # Create story → tickets
 │   ├── sprint.md
-│   ├── work.md
-│   ├── done.md
+│   ├── work.md              # Start working on ticket
+│   ├── done.md              # Complete with quality checks
 │   ├── commit.md
 │   ├── pr.md
 │   ├── release.md
-│   ├── env.md               # Environment management
+│   ├── env.md
 │   ├── status.md
 │   ├── sync.md
 │   ├── debt.md
 │   ├── decision.md
 │   ├── ux.md
 │   └── bye.md
-├── agents/                   # Complex task agents
-│   ├── init-agent.md
-│   ├── release-agent.md
-│   ├── review-agent.md
-│   ├── sync-agent.md
-│   └── migration-agent.md
+├── agents/                   # Autonomous agents
+│   ├── init-agent.md        # Project setup
+│   ├── onboard-agent.md     # Transform existing code
+│   ├── dev-agent.md         # Implement tickets
+│   ├── review-agent.md      # Code review
+│   ├── sync-agent.md        # Verify code ↔ docs
+│   ├── release-agent.md     # Manage releases
+│   └── migration-agent.md   # Complex migrations
 ├── skills/                   # Knowledge skills
+│   ├── story-format/        # Unified S-XXX format
+│   ├── quality-gates/       # Coverage, lint, tests
+│   ├── apps-structure/      # Independent git per app
+│   ├── git-conventions/     # Branch, commit patterns
 │   ├── commit-conventions/
 │   ├── pr-template/
-│   ├── story-format/
-│   ├── git-flow/
-│   ├── repo-conventions/
 │   ├── code-conventions/
 │   ├── design-principles/
 │   ├── github-patterns/
+│   ├── devops-structure/
 │   └── session-management/
 ├── hooks/
-│   └── hooks.json           # Auto-merge hooks config
+│   └── hooks.json           # Automatic guards
 ├── scripts/                  # Hook scripts
 │   ├── session-start.sh
 │   ├── session-save.sh
 │   ├── guard-story-exists.sh
 │   ├── guard-branch-check.sh
+│   ├── guard-secrets.sh
+│   ├── validate-root-whitelist.sh
 │   ├── detect-git-conventions.sh
+│   ├── get-repo-config.sh
 │   └── post-edit-format.sh
 └── doc/
     ├── 00-FOUNDATIONS.md
@@ -60,62 +67,57 @@ claude-flow/
 
 ### Commands (Orchestrators)
 
-Commands are explicit entry points that orchestrate workflows:
+Commands are explicit entry points that delegate to agents:
 
 ```markdown
 ---
-name: done
-description: Complete work with commit, PR, and story update
+description: Complete current work
+context: fork
+agent: (none - direct execution)
+allowed-tools: Read, Write, Edit, Bash(git:*), Bash(gh:*)
 ---
-
-# Workflow
-1. Run checks (lint, test)
-2. Apply commit-conventions skill
-3. Create commit
-4. Apply pr-template skill
-5. Create PR via gh
-6. Update story status
 ```
 
-**Key insight**: Commands orchestrate; they explicitly call skills and execute steps.
+**Key insight**: Commands orchestrate; complex tasks delegate to agents via `context: fork`.
 
-### Skills (Knowledge)
+### Agents (Autonomous Execution)
 
-Skills provide conventions and best practices but don't orchestrate:
-
-```markdown
----
-name: commit-conventions
-description: Conventional commit format
----
-
-# Format
-type(scope): description (#ticket)
-
-# Types
-feat, fix, docs, style, refactor, test, chore
-```
-
-**Key insight**: Skills are passive knowledge, activated by commands or Claude's judgment.
-
-### Agents (Complex Tasks)
-
-Agents handle multi-step complex tasks:
+Agents handle complex multi-step tasks:
 
 ```markdown
 ---
-name: release-agent
-tools: Read, Write, Edit, Bash, Glob, Grep
+name: dev-agent
+description: Implements story ticket
+tools: [Read, Write, Edit, Bash, Glob, Grep]
 model: sonnet
 ---
 
 # Responsibilities
-1. Pre-release validation
-2. Version management
-3. Changelog generation
-4. GitHub release
-5. Deployment
+1. Understand context
+2. Plan implementation
+3. Write code and tests
+4. Run quality checks
+5. Report completion
 ```
+
+### Skills (Knowledge)
+
+Skills provide conventions and best practices:
+
+```markdown
+---
+name: story-format
+description: Unified S-XXX format
+---
+
+# Story (S-XXX)
+- Category: functional | technical | ux
+- Apps Impacted
+- Tickets table
+- Acceptance Criteria
+```
+
+**Key insight**: Skills are passive knowledge, activated by commands or Claude's judgment.
 
 ### Hooks (Automatic Guards)
 
@@ -126,10 +128,8 @@ Hooks run automatically on specific events:
   "hooks": {
     "PreToolUse": [{
       "matcher": "Write|Edit",
-      "hooks": [{
-        "type": "command",
-        "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/guard-story-exists.sh"
-      }]
+      "type": "command",
+      "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/guard-secrets.sh"
     }]
   }
 }
@@ -146,61 +146,90 @@ When `/init` or `/onboard` runs, it creates:
 ```
 project/
 ├── apps/
-│   ├── devops/                  # DevOps configuration
-│   │   ├── docker/
-│   │   │   ├── docker-compose.yml
-│   │   │   ├── docker-compose.dev.yml
-│   │   │   └── docker-compose.prod.yml
-│   │   ├── env/
-│   │   │   ├── .env.example
-│   │   │   └── .env.dev
-│   │   ├── scripts/
-│   │   │   ├── setup.sh
-│   │   │   └── deploy.sh
-│   │   └── README.md
-│   ├── api/                     # Backend app (with its own config)
+│   ├── [app-name]/              # Each app has .git
+│   │   ├── .git/                # ✅ REQUIRED - independent repo
+│   │   ├── .claude/
+│   │   │   └── quality.json     # App-specific quality gates
 │   │   ├── src/
-│   │   ├── package.json
-│   │   ├── tsconfig.json        # App-specific config
-│   │   ├── .eslintrc.cjs        # App-specific config
+│   │   ├── package.json         # Self-contained (no extends)
+│   │   ├── tsconfig.json        # Complete config (no extends)
+│   │   ├── .eslintrc.cjs        # Complete config (no extends)
 │   │   ├── Dockerfile
+│   │   ├── .gitignore
 │   │   └── README.md
-│   └── web/                     # Frontend app (with its own config)
-│       ├── src/
-│       ├── package.json
-│       ├── tsconfig.json        # App-specific config
-│       ├── vite.config.ts       # App-specific config
-│       ├── tailwind.config.js   # App-specific config
-│       ├── Dockerfile
-│       └── README.md
+│   │
+│   └── devops/                  # NO .git (part of principal repo)
+│       ├── docker/
+│       │   ├── docker-compose.yml
+│       │   └── docker-compose.dev.yml
+│       ├── env/
+│       │   ├── .env.example
+│       │   └── .env.dev
+│       └── scripts/
+│           ├── setup.sh
+│           └── deploy.sh
+│
 ├── project/                     # Project management
-│   ├── vision.md                # Vision, objectives, constraints
-│   ├── personas.md              # User personas
-│   ├── ux.md                    # Design direction
-│   ├── roadmap.md               # High-level roadmap
+│   ├── vision.md
+│   ├── personas.md
+│   ├── ux.md
 │   ├── backlog/
-│   │   ├── functional/          # US-XXX stories
-│   │   ├── technical/           # TS-XXX stories
-│   │   └── ux/                  # UX-XXX stories
-│   └── sprints/                 # SPRINT-XXX files
+│   │   └── S-XXX-slug.md        # Unified story format
+│   └── sprints/
+│       └── SPRINT-XXX.md
+│
 ├── engineering/                 # Technical documentation
-│   ├── stack.md                 # Technical choices
-│   ├── architecture.md          # System architecture
-│   ├── conventions.md           # Code conventions
+│   ├── stack.md
+│   ├── architecture.md
 │   └── decisions/               # ADRs
-├── docs/                        # Public documentation
-│   ├── api/                     # Generated API docs
-│   └── archive/                 # Archived docs
+│
+├── docs/
+│   ├── api/
+│   └── archive/
+│
 ├── .claude/
-│   ├── session.json             # Session state
-│   ├── environments.json        # Environment config
-│   └── repos.json               # Git conventions
+│   ├── session.json
+│   ├── apps.json               # App configurations
+│   └── quality.json            # Global quality defaults
+│
+├── .git/                       # Principal repo
 ├── .gitignore
-├── CLAUDE.md                    # Entry point
+├── CLAUDE.md
 ├── README.md
-├── Makefile                     # Orchestration
-└── package.json                 # Workspace only (NO dependencies)
+├── Makefile
+└── package.json                # Workspace only (NO deps)
 ```
+
+## Git Architecture
+
+```
+PRINCIPAL REPO (.git/)
+├── project/           ──▶ Stories, sprints, vision
+├── engineering/       ──▶ Architecture, stack, ADRs
+├── docs/
+├── apps/
+│   ├── devops/       ──▶ Part of principal repo (no .git)
+│   │
+│   ├── api/
+│   │   └── .git/     ──▶ github.com/org/project-api
+│   │
+│   └── web/
+│       └── .git/     ──▶ github.com/org/project-web
+```
+
+### Why Independent Git Per App?
+
+1. **Autonomy**: Clone `apps/api` alone and it works
+2. **Independent PRs**: Each app has its own PR lifecycle
+3. **Story → Tickets**: One story creates tickets per app
+4. **Clear ownership**: Issues and PRs are per-app
+
+### Exception: devops/
+
+`apps/devops/` stays in principal repo because:
+- Orchestrates other apps
+- Contains multi-app config (docker-compose)
+- Releases are coordinated at project level
 
 ## Root Whitelist
 
@@ -208,12 +237,12 @@ project/
 
 | Item | Purpose |
 |------|---------|
-| `apps/` | All application code + devops + config |
+| `apps/` | Application code (each with .git) + devops |
 | `project/` | Project management (backlog, sprints) |
 | `engineering/` | Technical docs (architecture, decisions) |
 | `docs/` | Public documentation |
 | `.claude/` | Plugin config |
-| `.git/` | Git repository |
+| `.git/` | Principal repository |
 | `.gitignore` | Git ignore |
 | `.github/` | CI/CD (optional) |
 | `CLAUDE.md` | Entry point |
@@ -222,164 +251,85 @@ project/
 | `Makefile` | Orchestration |
 | `package.json` | Workspace only (NO dependencies) |
 
-**Everything else must be in `apps/` or deleted.**
-
-### Special Directories in apps/
-
-| Directory | Purpose |
-|-----------|---------|
-| `apps/devops/` | Docker, env, scripts |
-| `apps/config/` | Shared configs (TypeScript, ESLint, Prettier presets) |
-| `apps/[name]/` | Application code (extends config presets) |
-
 ## Forbidden at Root
 
 | Item | Where it goes |
 |------|---------------|
-| `tsconfig.json` | `apps/[name]/` (extends `apps/config/typescript/`) |
-| `.eslintrc*` | `apps/[name]/` (extends `apps/config/eslint/`) |
-| `.prettierrc*` | `apps/[name]/` (links to `apps/config/prettier.json`) |
+| `tsconfig.json` | `apps/[name]/` (self-contained) |
+| `.eslintrc*` | `apps/[name]/` (self-contained) |
 | `vite.config.*` | `apps/[name]/` |
 | `tailwind.config.*` | `apps/[name]/` |
-| `turbo.json` | DELETE (use Makefile) |
-| `Dockerfile` | `apps/devops/docker/` or `apps/[name]/` |
+| `Dockerfile` | `apps/[name]/` or `apps/devops/docker/` |
 | `docker-compose.*` | `apps/devops/docker/` |
 | `.env*` | `apps/devops/env/` |
 | `node_modules/` | DELETE |
 | `*.lock` | DELETE |
 
-## apps/devops/ Role
+## No Shared Config
 
-Central DevOps management:
+**Each app is 100% autonomous:**
 
-| Directory | Purpose |
-|-----------|---------|
-| `docker/` | Docker Compose files |
-| `env/` | Environment variables |
-| `scripts/` | Automation scripts |
-| `infra/` | Terraform/K8s (optional) |
-
-**Integration with Makefile:**
-
-```makefile
-up:    cd apps/devops/docker && docker-compose up -d
-down:  cd apps/devops/docker && docker-compose down
-logs:  cd apps/devops/docker && docker-compose logs -f $(app)
-setup: ./apps/devops/scripts/setup.sh
+❌ WRONG:
+```
+apps/config/typescript/base.json  # Shared config
+apps/api/tsconfig.json            # extends: "../config/..."
 ```
 
-## apps/config/ Role
+✅ CORRECT:
+```
+apps/api/tsconfig.json            # Complete config, no extends
+apps/web/tsconfig.json            # Complete config, no extends
+```
 
-Shared configuration presets:
+## Quality Gates
 
-| Directory | Purpose |
-|-----------|---------|
-| `typescript/` | TypeScript presets (base, node, react, library) |
-| `eslint/` | ESLint presets (base, node, react, typescript) |
-| `prettier.json` | Single Prettier config |
-
-**Usage pattern:**
+Each app has `.claude/quality.json`:
 
 ```json
-// apps/api/tsconfig.json
 {
-  "extends": "../config/typescript/node.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  }
+  "coverage": { "minimum": 80, "enforce": true },
+  "lint": { "warnings_allowed": 0 },
+  "tests": { "required": true },
+  "security": { "block_secrets": false }
 }
 ```
 
-```javascript
-// apps/api/.eslintrc.cjs
-module.exports = {
-  extends: [
-    '../config/eslint/node.cjs',
-    '../config/eslint/typescript.cjs',
-  ],
-  parserOptions: {
-    project: './tsconfig.json',
-  },
-};
-```
+Enforced by `/done` before PR creation.
 
 ## Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      USER INPUT                             │
-│                      /work #42                              │
+│                      /story "OAuth login"                    │
+├─────────────────────────────────────────────────────────────┤
+│  1. Create project/backlog/S-042-oauth-login.md             │
+│  2. Create GitHub Issue #42 (principal repo)                │
+│  3. Create tickets per app:                                  │
+│     - api#15 (github.com/org/project-api)                   │
+│     - web#23 (github.com/org/project-web)                   │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    COMMAND: work.md                         │
-│  1. Load session.json                                       │
-│  2. Read story from docs/backlog/                           │
-│  3. Create branch feature/#42-*                             │
-│  4. Update session.json                                     │
+│                  /work S-042 --app api                       │
+├─────────────────────────────────────────────────────────────┤
+│  1. cd apps/api                                              │
+│  2. git checkout -b feature/#15-oauth-login                 │
+│  3. Update .claude/session.json                             │
+│  4. Optional: delegate to dev-agent                          │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    USER WORKS...                            │
-│              (Claude helps with code)                       │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 HOOK: PreToolUse                            │
-│         guard-story-exists.sh checks branch                 │
-│              Exit 0 = allow, Exit 2 = block                 │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      USER INPUT                             │
-│                        /done                                │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    COMMAND: done.md                         │
-│  1. Run lint & tests                                        │
-│  2. Apply SKILL: commit-conventions                         │
-│  3. git commit                                              │
-│  4. Apply SKILL: pr-template                                │
-│  5. gh pr create                                            │
-│  6. Update story status → Review                            │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Environment Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    LOCAL DEVELOPMENT                        │
-│                   /env local (or make up)                   │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│              apps/devops/docker/docker-compose.yml          │
-│  - Starts api, web, db containers                           │
-│  - Uses apps/devops/env/.env                                │
-│  - Mounts app source for hot reload                         │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     DEPLOYMENT                              │
-│                /env deploy api staging                      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│            Platform CLI (Railway, Vercel, Fly.io)           │
-│  - Reads .claude/environments.json                          │
-│  - Deploys to configured service                            │
-│  - Production requires confirmation                         │
+│                         /done                                │
+├─────────────────────────────────────────────────────────────┤
+│  1. Read apps/api/.claude/quality.json                       │
+│  2. Run quality checks (lint, tests, coverage)               │
+│  3. Create commit in apps/api                                │
+│  4. Create PR in github.com/org/project-api                 │
+│  5. Close ticket api#15                                      │
+│  6. Update story S-042 (ticket done)                         │
+│  7. If all tickets done → Story done, close #42              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -390,6 +340,6 @@ module.exports = {
 | Hooks auto-merge | ✅ Works | Official docs |
 | `${CLAUDE_PLUGIN_ROOT}` | ✅ Works | Variable available |
 | Exit code 2 blocks | ✅ Works | Official docs |
-| Skills auto-invoke | ⚠️ 50-84% | Command invocation preferred |
-| Commands orchestrate | ✅ Reliable | Best practice |
-| apps/devops/ pattern | ✅ Adopted | Centralized DevOps |
+| context: fork | ✅ Works | Agent delegation |
+| Git per app | ✅ Works | Independent repos |
+| Quality gates | ✅ Works | Per-app config |
