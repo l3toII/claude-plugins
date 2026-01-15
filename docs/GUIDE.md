@@ -264,6 +264,66 @@ Résumé :
 
 ## 5. Stories et Backlog
 
+### Philosophie
+
+Une story doit être **compréhensible par tous** : développeurs, product owners, designers. Elle raconte une histoire, pas juste une liste technique.
+
+### Créer des Stories avec /story
+
+La commande `/story` est **interactive et intelligente** :
+
+```
+User: /story "Je veux que les users puissent se logger avec Google
+       et aussi reset leur password par email"
+
+Claude: Je comprends 2 fonctionnalités distinctes :
+
+  1. **Login Google** - Authentification via OAuth Google
+  2. **Reset Password** - Récupération de mot de passe par email
+
+  Quelques questions :
+  - Login Google : uniquement connexion ou aussi inscription ?
+  - Reset Password : délai d'expiration du lien ?
+
+User: Google pour login et inscription, lien valide 24h
+
+Claude: Parfait. Je vais créer 2 stories :
+
+  **S-005: Authentification Google OAuth**
+  - Login ET inscription via Google
+  - Type: feature
+
+  **S-006: Reset Password par email**
+  - Lien de reset valide 24h
+  - Type: feature
+
+  Confirmer la création ? (oui/non)
+
+User: oui
+
+Claude: Créer les issues GitHub maintenant ?
+        - oui : stories prêtes à être planifiées (ready)
+        - non : stories en brouillon local (draft)
+
+User: oui
+
+Claude: ✅ Créé S-005: Authentification Google OAuth
+           → Issue: org/project#42
+        ✅ Créé S-006: Reset Password par email
+           → Issue: org/project#43
+```
+
+**Comportement** :
+- Accepte une description en langage naturel
+- Identifie si plusieurs stories sont nécessaires
+- Pose des questions de clarification
+- Demande confirmation avant création
+- Propose de créer les issues GitHub (draft → ready)
+
+**Options** :
+- `--draft` : Force draft, pas de question GitHub
+- `--ready` : Force ready, crée les issues sans question
+
 ### Format Story
 
 Fichier : `project/backlog/S-XXX-slug.md`
@@ -273,20 +333,34 @@ Fichier : `project/backlog/S-XXX-slug.md`
 id: S-042
 title: OAuth Login avec Google
 type: feature                    # feature | tech | bug | ux
-status: ready                    # draft | ready | active | review | done
-sprint: sprint-03                # ou null si backlog
-github: org/project#42           # Issue dans repo principal
+status: draft                    # draft | ready | active | review | done
+sprint: null                     # sprint-XX ou null
 created: 2025-01-15
 ---
 
 # S-042: OAuth Login avec Google
 
+## Contexte
+
+Le taux de conversion à l'inscription est de 45%. Les utilisateurs
+abandonnent face au formulaire d'inscription classique. Google OAuth
+permettrait de simplifier l'onboarding.
+
+## Objectif
+
+En tant qu'utilisateur,
+je veux me connecter avec mon compte Google
+afin de m'inscrire en un clic sans créer de mot de passe.
+
 ## Description
 
-Permettre aux utilisateurs de se connecter via leur compte Google
-pour simplifier l'onboarding et augmenter le taux de conversion.
+Ajouter l'authentification Google OAuth sur la page de login :
+- Bouton "Continuer avec Google" visible
+- Flow OAuth complet (redirect → Google → callback)
+- Création automatique du compte si premier login
+- Liaison avec compte existant si même email
 
-## Acceptance Criteria
+## Critères d'acceptation
 
 - [ ] Bouton "Continuer avec Google" sur la page login
 - [ ] Flow OAuth complet (redirect, callback, token)
@@ -294,14 +368,22 @@ pour simplifier l'onboarding et augmenter le taux de conversion.
 - [ ] Session persistante après login
 - [ ] Gestion des erreurs OAuth (refus, timeout)
 
+## Hors scope
+
+- Login avec Apple (story séparée)
+- Login avec Facebook (non prévu)
+- Migration des comptes existants
+
 ## Tickets
 
-<!-- Rempli par l'agent de dev quand il travaille sur la story -->
-
+<!-- Rempli automatiquement par /work -->
 | App | Ticket | Status |
 |-----|--------|--------|
-| api | [api#15](https://github.com/org/api/issues/15) | done |
-| web | [web#23](https://github.com/org/web/issues/23) | active |
+
+## Questions résolues
+
+- Q: OAuth pour login seulement ou aussi inscription ?
+  R: Les deux, création de compte automatique au premier login.
 
 ## Notes
 
@@ -322,18 +404,25 @@ pour simplifier l'onboarding et augmenter le taux de conversion.
 
 ```
 draft → ready → active → review → done
-                  ↓
-               blocked (optionnel)
 ```
+
+| Status | Fichier local | Issue GitHub | Sprint possible |
+|--------|---------------|--------------|-----------------|
+| `draft` | ✅ | ❌ | ❌ |
+| `ready` | ✅ | ✅ | ✅ |
+| `active` | ✅ | ✅ | ✅ |
+| `review` | ✅ | ✅ | ✅ |
+| `done` | ✅ | ✅ (fermée) | ✅ |
+
+**Règle clé** : Une story doit être `ready` (avec issue GitHub) pour être ajoutée à un sprint. `/sprint plan` refuse les stories `draft`.
 
 | Status | Signification |
 |--------|---------------|
-| `draft` | Idée, pas encore spécifiée |
-| `ready` | Spécifiée, prête à être travaillée |
+| `draft` | Brouillon local, pas encore d'issue GitHub |
+| `ready` | Issue GitHub créée, prête à être planifiée |
 | `active` | En cours de développement |
-| `review` | Code fait, en review |
-| `done` | Mergé, déployé, terminé |
-| `blocked` | Bloqué par dépendance externe |
+| `review` | Code terminé, en revue |
+| `done` | Terminée, mergée |
 
 ---
 
