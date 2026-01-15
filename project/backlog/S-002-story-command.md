@@ -42,18 +42,18 @@ La commande `/story` doit :
 
 ## Critères d'acceptation
 
-- [ ] `/story "description libre"` déclenche le flow interactif
-- [ ] Claude identifie si plusieurs stories sont nécessaires
-- [ ] Claude pose des questions de clarification si ambiguïté
-- [ ] L'utilisateur confirme avant création
-- [ ] Fichiers créés dans `project/backlog/S-XXX-slug.md`
-- [ ] Template narratif (Contexte, Objectif, Description, Critères, Hors scope)
-- [ ] ID auto-incrémenté
-- [ ] Option `--type` pour forcer un type (feature, tech, bug, ux)
-- [ ] Après confirmation, demande "Créer l'issue GitHub ?" (oui → ready, non → draft)
-- [ ] Si oui : crée issue dans repo principal, lie dans le fichier story
-- [ ] Option `--draft` pour forcer draft sans question
-- [ ] Option `--ready` pour forcer ready (crée issue sans question)
+- [x] `/story "description libre"` déclenche le flow interactif
+- [x] Claude identifie si plusieurs stories sont nécessaires
+- [x] Claude pose des questions de clarification si ambiguïté
+- [x] L'utilisateur confirme avant création
+- [x] Fichiers créés dans `project/backlog/S-XXX-slug.md`
+- [x] Template narratif (Contexte, Objectif, Description, Critères, Hors scope)
+- [x] ID auto-incrémenté
+- [x] Option `--type` pour forcer un type (feature, tech, bug, ux)
+- [x] Après confirmation, demande "Créer l'issue GitHub ?" (oui → ready, non → draft)
+- [x] Si oui : crée issue dans repo principal, lie dans le fichier story
+- [x] Option `--draft` pour forcer draft sans question
+- [x] Option `--ready` pour forcer ready (crée issue sans question)
 
 ## Hors scope
 
@@ -106,10 +106,10 @@ Claude: ✅ Créé S-005: Authentification Google OAuth
 
 ## Notes techniques
 
-Fichiers à modifier :
+Fichiers modifiés :
 - `apps/flowc/commands/story.md` - Logique de la commande
-- `apps/flowc/skills/story-format/SKILL.md` - Template + règles draft/ready
-- `docs/GUIDE.md` - Section Stories et Backlog
+- `apps/flowc/skills/story.md` - Skill adaptatif + intégration GitHub
+- `apps/flowc/templates/story.md` - Template narratif
 
 Intégration GitHub :
 - Utiliser `gh issue create` pour créer l'issue

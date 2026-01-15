@@ -1,0 +1,10 @@
+{
+  "name": "flowc",
+  "version": "1.0.0",
+  "description": "Complete development workflow for Claude Code. Manage stories, sprints, commits, PRs, releases, and environments with anti-vibe-code guards.",
+  "author": "flowc",
+  "commands": "../commands/",
+  "agents": "../agents/",
+  "skills": "../skills/",
+  "hooks": "../hooks/hooks.json"
+}
