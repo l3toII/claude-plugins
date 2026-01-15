@@ -2,7 +2,7 @@
 id: S-001
 title: Restructuration monorepo
 type: tech
-status: active
+status: done
 sprint: sprint-00
 created: 2025-01-15
 ---
@@ -21,7 +21,7 @@ Transformer le repo claude-flow en structure monorepo compatible flowc pour perm
 - [x] Structure `docs/` avec GUIDE.md
 - [x] Configuration `.claude/flowc.json`
 - [x] Documentation adaptée pour apps type plugin (test.md)
-- [ ] Repo GitHub renommé en `claude-plugins`
+- [x] Repo GitHub renommé en `claude-plugins`
 
 ## Notes Techniques
 

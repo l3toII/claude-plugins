@@ -1,8 +1,8 @@
 {
-  "active_story": "S-001",
-  "active_app": "flowc",
+  "active_story": null,
+  "active_app": null,
   "branch": "main",
-  "started_at": "2025-01-15T10:00:00Z",
-  "status": "working",
+  "started_at": null,
+  "status": "idle",
   "current_sprint": "sprint-00"
 }

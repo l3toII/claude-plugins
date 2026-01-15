@@ -513,24 +513,27 @@ L'agent :
 /done
 ```
 
-1. **Quality Gates** : lint, tests, coverage
+1. **Quality Gates** : lint, tests, coverage (ou test.md pour plugins)
 2. **Review Agent** automatique :
    - Vérifie Clean Code
    - Vérifie Architecture
    - Vérifie sync docs
 3. **Si review fail** : suggestions de fix, itération
 4. **Si review pass** :
-   - Crée commit
+   - Coche les critères d'acceptation ✅
+   - Passe la story en `done`
+   - Clear la session (`session.json` → idle)
+   - Crée commit avec tous ces changements
    - Crée PR avec `Closes #XX`
-   - Met à jour story
+
+**Important** : La PR inclut le passage à `done` de la story. L'acceptation de la PR valide le tout. Pas de commit post-merge nécessaire.
 
 ### Fermeture Automatique
 
 ```
-PR merged dans api → Ticket api#15 fermé automatiquement
-                   → Story S-042 vérifie si tous tickets done
-                   → Si oui : Story S-042 passe à "done"
-                   → Issue GitHub #42 fermée automatiquement
+PR merged dans api → Ticket api#15 fermé automatiquement (Closes #XX)
+                   → Story déjà en "done" (inclus dans la PR)
+                   → Issue GitHub fermée automatiquement
 ```
 
 ---
