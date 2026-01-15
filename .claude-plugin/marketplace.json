@@ -1,33 +1,30 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "l3toII-plugins",
-  "description": "Workflow plugins for Claude Code - adaptive Git conventions, sprints, stories, and more",
+  "description": "Workflow plugins for Claude Code",
   "owner": {
     "name": "l3toII",
     "email": "contact@l3toII.dev"
   },
   "plugins": [
     {
-      "name": "claude-flow",
-      "source": "./plugins/claude-flow",
-      "description": "Complete development workflow with adaptive Git conventions. Auto-detects repo patterns (GitFlow, GitHub Flow, Jira) and adapts commands accordingly.",
-      "version": "1.0.0",
+      "name": "flowc",
+      "source": "./apps/flowc",
+      "description": "Development workflow plugin with interactive story creation, sprint management, and GitHub integration.",
+      "version": "0.1.0",
       "author": {
         "name": "l3toII",
         "email": "contact@l3toII.dev"
       },
-      "homepage": "https://github.com/l3toII/claude-flow",
-      "repository": "https://github.com/l3toII/claude-flow",
+      "homepage": "https://github.com/l3toII/claude-plugins",
+      "repository": "https://github.com/l3toII/claude-plugins",
       "license": "MIT",
       "keywords": [
         "workflow",
-        "git",
-        "gitflow",
-        "github-flow",
-        "jira",
+        "stories",
         "sprint",
         "agile",
-        "conventional-commits"
+        "backlog"
       ],
       "category": "workflow"
     }
