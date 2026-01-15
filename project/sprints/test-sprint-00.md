@@ -30,45 +30,61 @@ Tests d'acceptation pour valider les stories du sprint 00.
 | # | Test | Commande | Résultat attendu | Status |
 |---|------|----------|------------------|--------|
 | 1 | Story not ready bloquée | `/work S-XXX` (draft) | Guard bloque avec message "utilise /story d'abord" | [ ] |
-| 2 | Story ready acceptée | `/work S-XXX` (ready) | Setup démarre | [ ] |
-| 3 | Session créée | (suite de 2) | `.claude/session.json` créé avec active_story, branch, etc. | [ ] |
-| 4 | Status updated | (suite de 2) | Story passe de `ready` à `active` | [ ] |
-| 5 | Branche créée | (suite de 2) | `git branch` montre `feature/#XXX-slug` | [ ] |
-| 6 | explore-agent lancé | (suite de 2) | Agent explore le codebase, retourne fichiers/patterns | [ ] |
-| 7 | architect-agent lancé | (suite de 6) | Agent propose 2-3 options d'architecture | [ ] |
-| 8 | User choisit architecture | (suite de 7) | Claude attend le choix avant d'implémenter | [ ] |
-| 9 | TDD respecté | (après choix) | Claude écrit test d'abord (RED), puis code (GREEN) | [ ] |
-| 10 | Fin implémentation | (après TDD) | Message "Testez manuellement, puis /done" | [ ] |
-| 11 | Option --app | `/work S-XXX --app api` | Ticket créé dans repo api (multi-app) | [ ] |
-| 12 | Plugin mode | `/work S-XXX` (ce repo) | Pas de ticket GitHub, branche depuis ID story | [ ] |
+| 2 | Story not in sprint bloquée | `/work S-XXX` (ready, sprint: null) | Guard bloque avec message "utilise /sprint plan d'abord" | [ ] |
+| 3 | Story ready + in sprint acceptée | `/work S-XXX` (ready + sprint-00) | Setup démarre | [ ] |
+| 4 | Session créée | (suite de 3) | `.claude/session.json` créé avec active_story, branch, etc. | [ ] |
+| 5 | Status updated | (suite de 3) | Story passe de `ready` à `active` | [ ] |
+| 6 | Branche créée | (suite de 3) | `git branch` montre `feature/#XXX-slug` | [ ] |
+| 7 | explore-agent lancé | (suite de 3) | Agent explore le codebase, retourne fichiers/patterns | [ ] |
+| 8 | explore-agent format | (suite de 7) | Output avec sections: Fichiers clés, Patterns, Conventions, Architecture | [ ] |
+| 9 | architect-agent lancé | (suite de 8) | Agent reçoit contexte explore-agent, propose 2-3 options | [ ] |
+| 10 | User choisit architecture | (suite de 9) | Claude attend le choix avant d'implémenter | [ ] |
+| 11 | TDD respecté | (après choix) | Claude écrit test d'abord (RED), puis code (GREEN) | [ ] |
+| 12 | Fin implémentation | (après TDD) | Message "Testez manuellement, puis /done" | [ ] |
+| 13 | Option --app | `/work S-XXX --app api` | Ticket créé dans repo api (multi-app) | [ ] |
+| 14 | Plugin mode détecté | `/work S-XXX` (ce repo) | Détection: aucun .git dans apps/, mode plugin | [ ] |
+| 15 | Mono-app détecté | `/work S-XXX` (un .git dans apps/) | Détection auto, pas besoin de --app | [ ] |
+| 16 | Multi-app sans --app | `/work S-XXX` (plusieurs .git) | Erreur: --app requis | [ ] |
 
 ## S-004: /done basique
 
 | # | Test | Commande | Résultat attendu | Status |
 |---|------|----------|------------------|--------|
-| 1 | Dirty files détectés | `/done` (avec fichiers non commités) | Analyse + demande user (commit/ignore/abort) | [ ] |
-| 2 | Working tree propre | `/done` (tout commité) | Passe directement à review | [ ] |
-| 3 | review-agent lancé | (suite de 2) | Agent review les fichiers modifiés | [ ] |
-| 4 | Quality gates (app) | `/done` (dans app code) | Tests + lint + coverage en parallèle | [ ] |
-| 5 | Quality gates skip (plugin) | `/done` (dans plugin) | Pas de quality gates, juste review-agent | [ ] |
-| 6 | Issues critiques bloquent | (review avec issues critiques) | PR non créée, suggestions de fix affichées | [ ] |
-| 7 | PR créée | (review OK) | `gh pr create` avec template rempli | [ ] |
-| 8 | Template PR | (suite de 7) | Summary (story) + Changes (commits) + Test Plan (critères) | [ ] |
-| 9 | Closes ticket | (suite de 7) | `Closes #XX` dans le body | [ ] |
-| 10 | Session updated | (suite de 7) | `status: review`, `pr_url`, `pr_created_at` | [ ] |
-| 11 | Lien PR affiché | (suite de 7) | URL de la PR affichée à la fin | [ ] |
-| 12 | Message next step | (suite de 11) | "review par l'équipe, puis /sync après merge" | [ ] |
+| 1 | Pas de session | `/done` (sans /work) | Guard bloque avec "Lance /work d'abord" | [ ] |
+| 2 | Dirty files détectés | `/done` (fichiers non commités) | Analyse + demande user (commit/ignore/abort) | [ ] |
+| 3 | Dirty: commit sélectif | Choix "commit X, ignore Y" | X commité, Y ignoré | [ ] |
+| 4 | Dirty: ignorer tout | Choix "ignorer tout" | PR sans ces fichiers, warning affiché | [ ] |
+| 5 | Dirty: annuler | Choix "annuler" | Exit /done, user corrige manuellement | [ ] |
+| 6 | Working tree propre | `/done` (tout commité) | Passe directement à review | [ ] |
+| 7 | review-agent lancé | (suite de 6) | Agent review les fichiers modifiés | [ ] |
+| 8 | Quality gates (app) | `/done` (dans app code) | Tests + lint + coverage en parallèle de review | [ ] |
+| 9 | Quality gates skip (plugin) | `/done` (dans plugin) | Pas de quality gates, juste review-agent | [ ] |
+| 10 | Issues critiques bloquent | (review avec issues critiques) | PR non créée, suggestions de fix affichées | [ ] |
+| 11 | PR créée | (review OK) | `gh pr create` avec template rempli | [ ] |
+| 12 | Template PR - Story link | (suite de 11) | Lien vers story orchestrator dans Summary | [ ] |
+| 13 | Template PR - Ticket | (suite de 11) | `Closes #XX` pour ticket app | [ ] |
+| 14 | Template PR - Review | (suite de 11) | Verdict review-agent inclus | [ ] |
+| 15 | Template PR - Conditionnels | (suite de 11) | Screenshots/Breaking changes si applicable | [ ] |
+| 16 | Session updated | (suite de 11) | `status: review`, `pr_url`, `pr_created_at` | [ ] |
+| 17 | Lien PR affiché | (suite de 11) | URL de la PR affichée à la fin | [ ] |
+| 18 | Message next step | (suite de 17) | "review par l'équipe, puis /sync après merge" | [ ] |
+| 19 | Option --force | `/done --force` | Skip review-agent, warning affiché | [ ] |
 
 ## Résumé
 
 | Story | Tests | Passés | Échoués |
 |-------|-------|--------|---------|
 | S-002 | 12 | 0 | 0 |
-| S-003 | 12 | 0 | 0 |
-| S-004 | 12 | 0 | 0 |
+| S-003 | 16 | 0 | 0 |
+| S-004 | 19 | 0 | 0 |
+| **Total** | **47** | **0** | **0** |
 
 ## Notes
 
 - Exécuter les tests après merge de chaque feature
 - Cocher [x] quand le test passe
 - Documenter les bugs trouvés dans la section Notes
+
+### Bugs trouvés
+
+(aucun pour l'instant)

@@ -17,7 +17,9 @@ Configure la session, explore le codebase, propose l'architecture, puis Claude i
 
 ## Prérequis
 
-- Story doit être en status `ready` (sinon → "utilise `/story` d'abord")
+- Story doit être en status `ready` ET assignée à un sprint
+  - Si pas ready → "utilise `/story` d'abord"
+  - Si pas dans un sprint → "utilise `/sprint plan` d'abord"
 - Pour multi-app : `--app` requis si plusieurs apps détectées
 
 ## Flow
@@ -25,7 +27,7 @@ Configure la session, explore le codebase, propose l'architecture, puis Claude i
 ```
 /work S-XXX
     │
-    ├── 1. [Guard] Vérifie story ready
+    ├── 1. [Guard] Vérifie story ready + in sprint
     │
     ├── 2. Setup technique
     │   ├── Créer .claude/session.json
@@ -135,11 +137,12 @@ Claude:
 |--------|-------|----------|
 | Story non trouvée | ID invalide | Vérifier l'ID avec `ls project/backlog/` |
 | Story pas ready | Status draft | Utiliser `/story S-XXX` pour passer en ready |
+| Story pas dans sprint | Sprint null | Utiliser `/sprint plan` pour ajouter au sprint |
 | App requise | Multi-app sans --app | Ajouter `--app <name>` |
 
 ## Règles
 
-1. **Story ready** : Guard bloque si pas ready
+1. **Story ready + in sprint** : Guard bloque si pas ready ou pas dans un sprint
 2. **Exploration d'abord** : Toujours comprendre avant de coder
 3. **Architecture validée** : User choisit l'approche
 4. **TDD obligatoire** : Sauf plugins markdown

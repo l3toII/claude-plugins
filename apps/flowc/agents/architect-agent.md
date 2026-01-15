@@ -24,8 +24,34 @@ Agent d'architecture. Propose plusieurs options avec leurs trade-offs pour aider
 ```
 Architecture: [ce qu'il faut concevoir]
 Contraintes: [optionnel - limitations connues]
-Contexte: [optionnel - output de explore-agent]
+Contexte: [output de explore-agent - voir format ci-dessous]
 ```
+
+### Format du Contexte (depuis explore-agent)
+
+Le champ `Contexte` contient l'output structuré de explore-agent :
+
+```markdown
+## Exploration: [sujet]
+
+### Fichiers clés
+- `path/to/file.ts:L42` - [description]
+
+### Patterns identifiés
+- [Pattern]: [où et comment utilisé]
+
+### Conventions
+- Nommage: [convention]
+- Structure: [convention]
+
+### Architecture
+[Description de l'architecture existante]
+```
+
+**Utiliser ces informations pour** :
+- Proposer des options cohérentes avec l'existant
+- Réutiliser les patterns identifiés
+- Lister les fichiers impactés correctement
 
 ## Output
 

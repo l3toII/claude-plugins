@@ -88,6 +88,26 @@ Que faire ?
 
 **ATTENDRE** la réponse de l'utilisateur avant de continuer.
 
+### Actions selon le choix
+
+| Choix | Action |
+|-------|--------|
+| Commit fichier X | `git add X && git commit -m "..."` |
+| Ignore fichier X | `git checkout -- X` (revert) ou laisser (non inclus) |
+| Ignorer tout | Continuer sans ces fichiers (ils restent dirty) |
+| Annuler | Exit `/done`, user corrige manuellement |
+
+**Comportement "Ignorer tout"** :
+- Les fichiers dirty ne sont PAS inclus dans le commit
+- Ils restent dans le working tree (non commités)
+- La PR est créée sans ces fichiers
+- Warning affiché : "⚠️ X fichiers ignorés, restent non commités"
+
+**Comportement "Ignore fichier X"** :
+- Si modifié : `git checkout -- X` pour revenir à HEAD
+- Si nouveau : laissé tel quel (untracked)
+- Si supprimé : `git checkout -- X` pour restaurer
+
 ## Phase 3 : Review & Quality Gates
 
 ### En parallèle
@@ -175,18 +195,46 @@ gh pr create \
 
 ### Remplir le template
 
-| Variable | Source |
-|----------|--------|
-| `{{story_id}}` | session.json → active_story |
-| `{{story_title}}` | Story file → title |
-| `{{story_context}}` | Story file → Contexte section |
-| `{{app_ticket_number}}` | session.json → active_ticket |
-| `{{app_name}}` | session.json → active_app |
-| `{{commits_summary}}` | `git log --oneline main..HEAD` |
-| `{{files_changed_list}}` | `git diff --name-only main` |
-| `{{files_count}}` | Nombre de fichiers |
-| `{{acceptance_criteria_as_checklist}}` | Story file → Critères |
-| `{{review_agent_verdict}}` | Output review-agent |
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `{{story_id}}` | session.json → active_story | ID de la story (S-XXX) |
+| `{{story_title}}` | Story file → title | Titre de la story |
+| `{{story_file}}` | Story file → filename | Nom du fichier (S-XXX-slug.md) |
+| `{{story_context}}` | Story file → Contexte section | Description du contexte |
+| `{{orchestrator_url}}` | Config ou détection | URL du repo orchestrator |
+| `{{app_ticket_number}}` | session.json → active_ticket | Numéro du ticket app (#XX) |
+| `{{app_name}}` | session.json → active_app | Nom de l'app (api, web...) |
+| `{{commits_summary}}` | `git log --oneline main..HEAD` | Liste des commits |
+| `{{files_changed_list}}` | `git diff --name-only main` | Liste des fichiers modifiés |
+| `{{files_count}}` | `git diff --name-only main \| wc -l` | Nombre de fichiers |
+| `{{acceptance_criteria_as_checklist}}` | Story file → Critères | Critères en checklist |
+| `{{review_agent_verdict}}` | review-agent → Verdict | "Prêt" ou "Bloquant" |
+| `{{review_agent_warnings}}` | review-agent → Issues importantes | Liste des warnings |
+| `{{warnings_count}}` | review-agent → count | Nombre de warnings |
+| `{{review_warnings}}` | Boolean | true si warnings > 0 |
+| `{{has_screenshots}}` | Boolean | true si fichiers UI modifiés |
+| `{{screenshots}}` | User input | Screenshots fournis par user |
+| `{{has_breaking_changes}}` | Boolean | true si breaking changes |
+| `{{breaking_changes}}` | Story file ou détection | Description des breaking changes |
+
+### Variables conditionnelles
+
+Les variables `{{#if X}}` affichent leur section seulement si la condition est vraie :
+
+```handlebars
+{{#if review_warnings}}
+  → Affiche si warnings > 0
+{{/if}}
+
+{{#if has_screenshots}}
+  → Affiche si fichiers UI modifiés (*.tsx, *.vue, *.css...)
+{{/if}}
+
+{{#if has_breaking_changes}}
+  → Affiche si breaking_changes non vide dans story
+  → Ou si détecté : suppression/renommage d'API publique
+{{/if}}
+```
 
 ### Afficher
 

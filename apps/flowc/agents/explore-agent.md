@@ -149,6 +149,36 @@ Output:
   2. `tests/helpers/factories.ts` - Factories disponibles
 ```
 
+## Passation vers architect-agent
+
+L'output de explore-agent est passé à architect-agent via le champ `Contexte`.
+
+**Format de passation** :
+
+```
+Architecture: [ce que la story demande]
+Contraintes: [extraites de la story]
+Contexte: |
+  ## Exploration: [sujet]
+
+  ### Fichiers clés
+  - [liste des fichiers]
+
+  ### Patterns identifiés
+  - [patterns trouvés]
+
+  ### Conventions
+  - [conventions du projet]
+
+  ### Architecture
+  [description architecture existante]
+```
+
+architect-agent utilise ces informations pour :
+- Proposer des options cohérentes avec l'existant
+- Réutiliser les patterns identifiés
+- Respecter les conventions du projet
+
 ## Limites
 
 - **Ne code pas** : Retourne uniquement du contexte

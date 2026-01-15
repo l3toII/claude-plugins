@@ -9,14 +9,16 @@ Orchestre la commande `/work`. Lance explore-agent, architect-agent, puis Claude
 
 ## Déclenchement
 
-Invoqué par `/work S-XXX` après validation du guard (story must be ready).
+Invoqué par `/work S-XXX` après validation du guard (story must be ready + in sprint).
 
 ## Flow obligatoire
 
 ```
 /work S-XXX
     │
-    ├── 1. [Guard] Story ready ?
+    ├── 1. [Guard] Story ready + in sprint ?
+    │   ├── Si pas ready → "utilise /story d'abord"
+    │   └── Si pas in sprint → "utilise /sprint plan d'abord"
     │
     ├── 2. Setup technique
     │   ├── Lire la story
@@ -44,9 +46,11 @@ project/backlog/S-XXX-*.md
 
 Extraire :
 - `status` (doit être `ready`)
-- `sprint` pour session.json
+- `sprint` (doit être non-null, e.g. `sprint-00`)
 - `title` pour le slug de branche
 - `acceptance criteria` pour l'implémentation
+
+**Guard** : Si `status != ready` OU `sprint == null` → bloquer.
 
 ### Créer session.json
 
@@ -136,33 +140,74 @@ Pour les plugins Claude (markdown) :
 
 ## Détection du contexte
 
-### Plugin Claude
+La détection se fait par ordre de priorité :
+
+### 1. Plugin Claude
+
+**Condition** : Aucune app avec son propre `.git` dans `apps/`
 
 ```
-Pas de apps/ avec sous-repos
-OU apps/flowc sans .git propre
-```
-→ Pas de ticket GitHub, branche depuis ID story
+# Cas 1: Pas de dossier apps/
+project/
+└── backlog/
 
-### Mono-app
+# Cas 2: apps/ existe mais sans sous-repos git
+apps/
+└── flowc/        ← pas de .git propre
+    └── commands/
+```
+
+**Comportement** :
+- Pas de ticket GitHub app (story suffit)
+- Branche depuis ID story : `feature/#XXX-slug`
+- PR dans le repo courant
+
+### 2. Mono-app
+
+**Condition** : Une seule app avec `.git` dans `apps/`
 
 ```
 apps/
 └── api/
-    └── .git/
+    └── .git/     ← un seul sous-repo
 ```
-→ Pas besoin de `--app`, auto-détecté
 
-### Multi-app
+**Comportement** :
+- Pas besoin de `--app` (auto-détecté)
+- Ticket créé dans le repo de l'app
+- Branche : `feature/#TICKET-slug`
+
+### 3. Multi-app
+
+**Condition** : Plusieurs apps avec `.git` dans `apps/`
 
 ```
 apps/
 ├── api/
-│   └── .git/
+│   └── .git/     ← sous-repo 1
 └── web/
-    └── .git/
+    └── .git/     ← sous-repo 2
 ```
-→ `--app` requis, ticket créé dans repo app
+
+**Comportement** :
+- `--app` requis
+- Ticket créé dans le repo de l'app spécifiée
+- Erreur si `--app` manquant
+
+### Algorithme de détection
+
+```bash
+# Compter les sous-repos git dans apps/
+APP_COUNT=$(find apps -maxdepth 2 -name ".git" -type d 2>/dev/null | wc -l)
+
+if [ "$APP_COUNT" -eq 0 ]; then
+    # Plugin mode
+elif [ "$APP_COUNT" -eq 1 ]; then
+    # Mono-app
+else
+    # Multi-app
+fi
+```
 
 ## Output attendu
 

@@ -1758,11 +1758,28 @@ Configuration principale du projet :
 }
 ```
 
+Après `/done`, la session passe en `review` avec les infos PR :
+
+```json
+{
+  "active_story": "S-042",
+  "active_app": "api",
+  "active_ticket": "api#15",
+  "branch": "feature/#15-oauth-backend",
+  "started_at": "2025-01-15T10:00:00Z",
+  "status": "review",
+  "current_sprint": "sprint-03",
+  "pr_url": "https://github.com/org/api/pull/16",
+  "pr_created_at": "2025-01-15T14:30:00Z"
+}
+```
+
 ### Génération
 
 - `/init` crée `flowc.json` depuis les réponses au questionnaire
 - `/onboard` génère `flowc.json` depuis la détection + questionnaire
 - `session.json` est créé/mis à jour par `/work`
+- `session.json` passe en `review` après `/done`
 
 ---
 
