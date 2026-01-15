@@ -1,10 +1,10 @@
 {
   "name": "flowc",
-  "version": "1.0.0",
-  "description": "Complete development workflow for Claude Code. Manage stories, sprints, commits, PRs, releases, and environments with anti-vibe-code guards.",
-  "author": "flowc",
-  "commands": "../commands/",
-  "agents": "../agents/",
-  "skills": "../skills/",
-  "hooks": "../hooks/hooks.json"
+  "version": "0.1.0",
+  "description": "Development workflow for Claude Code. Currently supports story creation with GitHub integration.",
+  "author": {
+    "name": "Leto"
+  },
+  "commands": "./commands/",
+  "skills": "./skills/"
 }
